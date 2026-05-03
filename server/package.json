@@ -1,0 +1,18 @@
+{
+  "name": "sborka-pro-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "СборкаПро — backend (webhook МойСклад, API для приложения и панели)",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}
