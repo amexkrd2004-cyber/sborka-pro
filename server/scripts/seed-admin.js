@@ -13,6 +13,8 @@ const fs = require('fs');
 const { Pool } = require('pg');
 
 async function main() {
+  console.log('[db:seed] старт…');
+
   if (!process.env.DATABASE_URL || !String(process.env.DATABASE_URL).trim()) {
     console.error(
       'Нужна переменная DATABASE_URL. В server/.env строка должна быть БЕЗ # в начале, например:\n' +
@@ -29,6 +31,15 @@ async function main() {
   const login = (process.env.SEED_ADMIN_LOGIN || 'admin').trim();
   const displayName = (process.env.SEED_ADMIN_DISPLAY_NAME || 'Администратор').trim();
   const hash = bcrypt.hashSync(password, 10);
+
+  let hostHint = '';
+  try {
+    const u = new URL(process.env.DATABASE_URL);
+    hostHint = `${u.hostname}:${u.port || '5432'}`;
+  } catch {
+    hostHint = '(разбор URL не удался)';
+  }
+  console.log('[db:seed] хост из DATABASE_URL:', hostHint);
 
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   try {
@@ -47,6 +58,7 @@ async function main() {
       [login, hash, displayName]
     );
     console.log('Готово: пользователь', login, '(роль admin). Вход: POST /auth/login');
+    console.log('[db:seed] УСПЕХ. Код выхода будет 0.');
   } finally {
     await pool.end();
   }
