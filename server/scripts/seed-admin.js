@@ -13,8 +13,11 @@ const fs = require('fs');
 const { Pool } = require('pg');
 
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    console.error('Нужен DATABASE_URL в .env');
+  if (!process.env.DATABASE_URL || !String(process.env.DATABASE_URL).trim()) {
+    console.error(
+      'Нужна переменная DATABASE_URL. В server/.env строка должна быть БЕЗ # в начале, например:\n' +
+        'DATABASE_URL=postgresql://...'
+    );
     process.exit(1);
   }
   const password = process.env.SEED_ADMIN_PASSWORD;
