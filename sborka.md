@@ -39,7 +39,7 @@
 
 | Путь | Содержимое |
 |------|------------|
-| `server/` | Backend: Node.js + Express. Вход `server/src/index.js`, webhook `server/src/routes/webhook.js`, асинхронная обработка `server/src/services/moyskladWebhookWorker.js`, API `server/src/services/moyskladApi.js`. См. `server/README.md`, **`docs/moysklad-integration.md`**. |
+| `server/` | Backend: Node.js + Express. Вход `server/src/index.js`, БД `server/src/db/`, webhook `server/src/routes/webhook.js`, auth `server/src/routes/auth.js`, заказы `server/src/routes/orders.js`, МойСклад `server/src/services/moyskladApi.js`, `moyskladWebhookWorker.js`, `moyskladOrders.js`. См. `server/README.md`, **`docs/moysklad-integration.md`**. |
 | `mobile/` | *(планируется, фаза C)* Expo/React Native |
 | `web/` | *(планируется, фаза E)* админ-панель |
 
@@ -61,9 +61,11 @@
 
 ### Фаза B — Минимальный бэкенд
 
-1. Таблицы: пользователи (кладовщики), привязка к складам, push-токены, журнал уведомлений, `assembly_log`, отказы, настройки (по ТЗ).
-2. `POST /auth/login`, `POST /auth/register-token`, `GET /orders`, `GET /orders/:id`, `PATCH /orders/:id/status` (прокси/обновление МойСклад).
-3. Защита **«кто первый взял заказ»** — атомарное назначение (чтобы два кладовщика не вели одну сборку).
+**Прогресс (2026-05-04):** PostgreSQL, схема таблиц, **`POST /auth/login`**, **`GET /auth/me`**, **`POST /auth/register-token`**, **`GET /orders`**, **`GET /orders/:id`**, **`POST /orders/:id/claim`** (атомарный захват). Осталось: **`PATCH /orders/:id/status`** (обновление статуса в МойСклад), журнал уведомлений, доработка ролей/складов по ТЗ.
+
+1. ~~Таблицы: пользователи (кладовщики), привязка к складам, push-токены, журнал уведомлений, `assembly_log`, отказы, настройки (по ТЗ).~~ ✅ Первый набор в `server/src/db/schema.sql` (users, assembly_claims, push_tokens, assembly_log, order_refusals, app_settings); сид админа `npm run db:seed`.
+2. ~~`POST /auth/login`, `POST /auth/register-token`, `GET /orders`, `GET /orders/:id`~~ ✅ **`PATCH /orders/:id/status`** — пока заглушка 501 (обновление в МойСклад — следующий шаг).
+3. ~~Защита **«кто первый взял заказ»** — атомарное назначение~~ ✅ `POST /orders/:id/claim` + `ON CONFLICT DO NOTHING` в PostgreSQL.
 
 ### Фаза C — Мобильное приложение (MVP)
 
@@ -132,6 +134,7 @@
 - **2026-05-03** — Старт фазы A: создан каталог `server/` (Express, `/health`, `/webhook/moysklad`, безопасное логирование тела).
 - **2026-05-03** — Интеграция МойСклад: зафиксирована в **`docs/moysklad-integration.md`** (2 вебхука, формат `events`, `MOYSKLAD_TOKEN`, асинхронный worker); код: `moyskladApi.js`, `moyskladWebhookWorker.js`.
 - **2026-05-04** — **Фаза A закрыта на проде:** вебхуки доставляются, HTTP 200; worker с токеном на Railway; **`assemblyMatch: true`** при статусе «Сборка» (догрузка имени статуса по `state.meta.href`). Заглушка «TODO phase B» — сигнал к разработке фазы B, а не к доработке A.
+- **2026-05-04** — **Старт фазы B:** PostgreSQL (`DATABASE_URL`), JWT (`JWT_SECRET`), схема в `server/src/db/schema.sql`, эндпоинты `/auth/*`, `/orders`, захват заказа `POST /orders/:id/claim`. Прод без БД не обязателен: без `DATABASE_URL` сервер остаётся в режиме A.
 
 ---
 
@@ -160,6 +163,7 @@
 | 2026-05-03 | `railway-sborka-pro.md` v1.3: шаг 6 упрощён (зачем публичный URL, чеклист А–Е, `$myServer`). |
 | 2026-05-04 | **Закрытие фазы A (прод):** push `84119b8` — снимок тела вебхука для worker, лог `worker queued`, скрипт `moysklad:register-webhooks`, правки доков. Push `2ec5065` — чтение имени статуса заказа через GET `state.meta.href` (исправление пустого `state.name` в API). В логах подтверждены `assemblyMatch: true` и `TODO phase B`. |
 | 2026-05-04 | В `sborka.md` отмечено завершение фазы A (п.1–5), обновлены раздел 2, памятка для ИИ (раздел 8). |
+| 2026-05-04 | **Фаза B (часть 1):** зависимости `pg`, `jsonwebtoken`, `bcryptjs`; `initDb` + схема; `POST /auth/login`, `GET /auth/me`, `POST /auth/register-token`; `GET /orders`, `GET /orders/:id`, `POST /orders/:id/claim`; `PATCH /orders/:id/status` → 501; `npm run db:seed`; обновлены `server/README.md`, `.env.example`, план в `sborka.md`. |
 
 ---
 
@@ -167,7 +171,7 @@
 
 Скопируйте в чат при необходимости:
 
-> Проект СборкаПро: контекст и план в файле `sborka.md` (актуализация руководств — раздел 5.1). Backend: `server/README.md`, МойСклад: `docs/moysklad-integration.md`, деплой: `docs/railway-sborka-pro.md`. Руководства в `docs/rukovodstva/`. ТЗ в `ТЗ_СборкаПро.docx`. МойСклад ↔ amoCRM (amgroup) уже связаны. **Фаза A завершена** (Railway HTTPS, вебхуки, worker, `assemblyMatch` для «Сборки»). Продолжаем **фазу B**: [БД / auth / orders API / захват заказа — уточнить шаг].
+> Проект СборкаПро: контекст и план в файле `sborka.md` (актуализация руководств — раздел 5.1). Backend: `server/README.md`, МойСклад: `docs/moysklad-integration.md`, деплой: `docs/railway-sborka-pro.md`. Руководства в `docs/rukovodstva/`. ТЗ в `ТЗ_СборкаПро.docx`. МойСклад ↔ amoCRM (amgroup) уже связаны. **Фаза A завершена** (Railway HTTPS, вебхуки, worker, `assemblyMatch` для «Сборки»). **Фаза B в работе:** PostgreSQL + JWT + `/orders` + `claim` готовы; дальше — **PATCH статуса в МойСклад** и прочее по ТЗ. Продолжаем: [уточнить шаг].
 
 ---
 

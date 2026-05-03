@@ -8,7 +8,7 @@ const router = express.Router();
  * МойСклад: POST с телом { auditContext, events } и query requestId.
  * См. docs/moysklad-integration.md
  */
-router.post('/moysklad', express.json({ limit: '1mb' }), (req, res) => {
+router.post('/moysklad', (req, res) => {
   const summary = summarizeWebhookPayload(req.body);
   const requestId = typeof req.query.requestId === 'string' ? req.query.requestId : undefined;
   const logFull = process.env.WEBHOOK_LOG_FULL_BODY === 'true';
