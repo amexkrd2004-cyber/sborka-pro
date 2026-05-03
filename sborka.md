@@ -101,7 +101,7 @@
 | `docs/rukovodstva/administrator.md` | Администратор: веб-панель, пользователи, отказы, отчёты |
 | `docs/rukovodstva/systemnyy-administrator.md` | Системный администратор: развёртывание с нуля, env, webhook, бэкапы |
 | `server/README.md` | Запуск backend локально, эндпоинты, настройка вебхука МойСклад |
-| `docs/railway-sborka-pro.md` | Пошаговая установка backend на Railway (GitHub, Root Directory `server`, домен, Variables) |
+| `docs/railway-sborka-pro.md` | Пошаговая установка backend на Railway (GitHub, Root Directory `server`, домен, Variables, **шаг 7** — Postgres + JWT + сид) |
 | `docs/moysklad-integration.md` | **Схема связи с МойСклад:** вебхуки CREATE/UPDATE, тело POST, токен, асинхронная догрузка заказа, статус «Сборка» |
 
 ### 5.1. Актуализация руководств (по мере роста проекта)
@@ -164,6 +164,7 @@
 | 2026-05-04 | **Закрытие фазы A (прод):** push `84119b8` — снимок тела вебхука для worker, лог `worker queued`, скрипт `moysklad:register-webhooks`, правки доков. Push `2ec5065` — чтение имени статуса заказа через GET `state.meta.href` (исправление пустого `state.name` в API). В логах подтверждены `assemblyMatch: true` и `TODO phase B`. |
 | 2026-05-04 | В `sborka.md` отмечено завершение фазы A (п.1–5), обновлены раздел 2, памятка для ИИ (раздел 8). |
 | 2026-05-04 | **Фаза B (часть 1):** зависимости `pg`, `jsonwebtoken`, `bcryptjs`; `initDb` + схема; `POST /auth/login`, `GET /auth/me`, `POST /auth/register-token`; `GET /orders`, `GET /orders/:id`, `POST /orders/:id/claim`; `PATCH /orders/:id/status` → 501; `npm run db:seed`; обновлены `server/README.md`, `.env.example`, план в `sborka.md`. |
+| 2026-05-04 | **`docs/railway-sborka-pro.md` v1.6:** шаг 7 — подробная инструкция для новичка (Postgres, `DATABASE_URL`, `JWT_SECRET`, сид, проверки curl); строки в «Типичные проблемы». |
 
 ---
 

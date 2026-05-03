@@ -57,17 +57,9 @@ npm run moysklad:register-webhooks
 
 ## Railway (фаза B)
 
-1. В проекте добавьте **PostgreSQL**, в сервисе приложения задайте **`DATABASE_URL`** (часто подставляется ссылкой из плагина).
-2. **`JWT_SECRET`** — случайная строка ≥32 символов.
-3. Однократно выполните сид (локально с тем же `DATABASE_URL` или через **Railway → Shell** в каталоге с репозиторием):
+Пошагово для новичков: в **`docs/railway-sborka-pro.md`** найдите раздел **«Шаг 7. PostgreSQL, JWT и первый пользователь (фаза B)»** (он после шага 6 про МойСклад).
 
-   ```bash
-   cd server && npm run db:seed
-   ```
-
-   Переменные сида: **`SEED_ADMIN_PASSWORD`** (обязательно), `SEED_ADMIN_LOGIN` (по умолчанию `admin`).
-
-4. Задеплойте; проверьте `GET /health` и вход `POST /auth/login`.
+Кратко: PostgreSQL в проекте → **`DATABASE_URL`** в Variables **приложения** → **`JWT_SECRET`** (≥32 символов) → **`SEED_ADMIN_PASSWORD`** → локально `npm run db:seed` → проверка **`/health`**, **`/auth/login`**, **`/orders`**.
 
 Полная инструкция по GitHub и Root Directory `server`: **[`docs/railway-sborka-pro.md`](../docs/railway-sborka-pro.md)**.
 
