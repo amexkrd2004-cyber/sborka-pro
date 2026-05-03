@@ -165,6 +165,8 @@
 | 2026-05-04 | В `sborka.md` отмечено завершение фазы A (п.1–5), обновлены раздел 2, памятка для ИИ (раздел 8). |
 | 2026-05-04 | **Фаза B (часть 1):** зависимости `pg`, `jsonwebtoken`, `bcryptjs`; `initDb` + схема; `POST /auth/login`, `GET /auth/me`, `POST /auth/register-token`; `GET /orders`, `GET /orders/:id`, `POST /orders/:id/claim`; `PATCH /orders/:id/status` → 501; `npm run db:seed`; обновлены `server/README.md`, `.env.example`, план в `sborka.md`. |
 | 2026-05-04 | **`docs/railway-sborka-pro.md` v1.6:** шаг 7 — подробная инструкция для новичка (Postgres, `DATABASE_URL`, `JWT_SECRET`, сид, проверки curl); строки в «Типичные проблемы». |
+| 2026-05-04 | **`docs/railway-sborka-pro.md` v1.6.2:** шаг 7.3 — **`DATABASE_PUBLIC_URL`** и Variable Reference; локальный `.env` для сида; `server/.env.example` и `server/README.md`. |
+| 2026-05-04 | **`systemnyy-administrator.md`:** таблица env и раздел 5 — PostgreSQL Railway, сид, публичный URL. |
 
 ---
 
