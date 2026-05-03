@@ -31,9 +31,13 @@ function summarizeWebhookPayload(body) {
     return { keys: Object.keys(body), eventCount: null };
   }
 
+  const auditUid = body.auditContext?.uid;
+
   return {
     eventCount: events.length,
-    types: events.map((e) => e?.meta?.type ?? e?.meta?.href ?? '?').slice(0, 20),
+    auditUid: auditUid || undefined,
+    actions: events.map((e) => e?.action ?? '?').slice(0, 15),
+    types: events.map((e) => e?.meta?.type ?? '?').slice(0, 15),
   };
 }
 

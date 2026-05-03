@@ -6,4 +6,5 @@
 - **ТЗ:** `ТЗ_СборкаПро.docx`  
 - **Backend (фаза A):** [`server/README.md`](server/README.md)  
 - **Деплой на Railway:** [`docs/railway-sborka-pro.md`](docs/railway-sborka-pro.md)  
+- **МойСклад (вебхуки + API):** [`docs/moysklad-integration.md`](docs/moysklad-integration.md)  
 - **Руководства:** [`docs/rukovodstva/`](docs/rukovodstva/)

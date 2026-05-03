@@ -39,7 +39,7 @@
 
 | Путь | Содержимое |
 |------|------------|
-| `server/` | Backend: Node.js + Express. Вход `server/src/index.js`, маршруты webhook `server/src/routes/webhook.js`, `GET /health`, `POST /webhook/moysklad`. См. `server/README.md`. |
+| `server/` | Backend: Node.js + Express. Вход `server/src/index.js`, webhook `server/src/routes/webhook.js`, асинхронная обработка `server/src/services/moyskladWebhookWorker.js`, API `server/src/services/moyskladApi.js`. См. `server/README.md`, **`docs/moysklad-integration.md`**. |
 | `mobile/` | *(планируется, фаза C)* Expo/React Native |
 | `web/` | *(планируется, фаза E)* админ-панель |
 
@@ -51,7 +51,7 @@
 
 ### Фаза A — Инфраструктура и МойСклад
 
-**Прогресс:** п.1 и п.5 выполнены в коде (`server/`). Дальше — п.2 (HTTPS), п.3–4 (токен и вебхук в МойСклад).
+**Прогресс:** п.1 и п.5 в коде; репозиторий на GitHub; **Railway** — деплой с Root Directory `server` (HTTPS после выдачи домена). Дальше — п.2 завершить: **Generate Domain**, проверить `/health`, затем п.3–4 (МойСклад).
 
 1. ~~Инициализировать репозиторий: `server/` (Node), позже `mobile/` (Expo), `web/` (админка).~~ ✅
 2. Поднять сервер с HTTPS-публичным URL (Railway/Render/VPS + домен или выданный URL).
@@ -100,6 +100,7 @@
 | `docs/rukovodstva/systemnyy-administrator.md` | Системный администратор: развёртывание с нуля, env, webhook, бэкапы |
 | `server/README.md` | Запуск backend локально, эндпоинты, настройка вебхука МойСклад |
 | `docs/railway-sborka-pro.md` | Пошаговая установка backend на Railway (GitHub, Root Directory `server`, домен, Variables) |
+| `docs/moysklad-integration.md` | **Схема связи с МойСклад:** вебхуки CREATE/UPDATE, тело POST, токен, асинхронная догрузка заказа, статус «Сборка» |
 
 ### 5.1. Актуализация руководств (по мере роста проекта)
 
@@ -129,6 +130,7 @@
 - **2026-05-03** — Зафиксированы: ведение `sborka.md`, три пользовательских руководства в `docs/rukovodstva/`. Интеграция amocrm–МойСклад уже работает; наш сервер и приложение — в разработке.
 - **2026-05-03** — Договорённость: при каждом изменении функционала для пользователей или развёртывания — сразу актуализировать соответствующее руководство (матрица в разделе 5.1); нейтральные формулировки поэтапно заменять на фактические.
 - **2026-05-03** — Старт фазы A: создан каталог `server/` (Express, `/health`, `/webhook/moysklad`, безопасное логирование тела).
+- **2026-05-03** — Интеграция МойСклад: зафиксирована в **`docs/moysklad-integration.md`** (2 вебхука, формат `events`, `MOYSKLAD_TOKEN`, асинхронный worker); код: `moyskladApi.js`, `moyskladWebhookWorker.js`.
 
 ---
 
@@ -149,6 +151,12 @@
 | 2026-05-03 | `railway-sborka-pro.md` v0.6: опечатка `it push` → `git push`. |
 | 2026-05-03 | `railway-sborka-pro.md` v0.7: настройка `git config` при Author identity unknown. |
 | 2026-05-03 | `railway-sborka-pro.md` v0.8: `it config` vs `git config`, ошибка PowerShell про `It`. |
+| 2026-05-03 | `railway-sborka-pro.md` v0.9: зависание `git push` — авторизация, PAT, `--verbose`. |
+| 2026-05-03 | Код запушен на GitHub (`sborka-pro`), фаза A: переход к деплою Railway. |
+| 2026-05-03 | Railway: успешный деплой после Root Directory `server` (диагноз / Set root directory). `railway-sborka-pro.md` v1.0 — где искать «сервис». |
+| 2026-05-03 | МойСклад: вебхуки только через JSON API (`POST /entity/webhook`); обновлены `railway-sborka-pro.md` v1.1, `systemnyy-administrator.md`, `server/README.md`. |
+| 2026-05-03 | **`docs/moysklad-integration.md`**, worker догрузки заказа, `MOYSKLAD_ASSEMBLY_STATE_NAME`; Railway шаг 6 — два вебхука + Variables. |
+| 2026-05-03 | `railway-sborka-pro.md` v1.3: шаг 6 упрощён (зачем публичный URL, чеклист А–Е, `$myServer`). |
 
 ---
 
