@@ -17,6 +17,8 @@ npm install
 copy .env.example .env
 ```
 
+В **Windows PowerShell**, если `npm` ругается на **`npm.ps1`** и политику выполнения, вызывайте **`npm.cmd install`** (и **`npm.cmd run db:seed`**) либо выполните `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` один раз.
+
 Заполните в `.env` как минимум **`DATABASE_URL`**, **`JWT_SECRET`** (≥32 символов), **`MOYSKLAD_TOKEN`**, **`SEED_ADMIN_PASSWORD`** (≥8 символов), затем:
 
 ```bash
