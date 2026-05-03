@@ -1,6 +1,24 @@
 const { fetchEntityByHref, getToken, getAssemblyStateName } = require('./moyskladApi');
 
 /**
+ * В ответе GET заказа `state.name` часто отсутствует — только `state.meta.href` на справочник статусов.
+ * @param {object} order
+ * @returns {Promise<string>}
+ */
+async function getCustomerOrderStateName(order) {
+  const inline = order?.state?.name;
+  if (inline != null && String(inline).trim() !== '') {
+    return String(inline).trim();
+  }
+  const stateHref = order?.state?.meta?.href;
+  if (!stateHref) return '';
+  const st = await fetchEntityByHref(stateHref);
+  if (!st) return '';
+  const n = st.name;
+  return n != null ? String(n).trim() : '';
+}
+
+/**
  * Обработка тела вебхука после отправки HTTP 200 (не блокировать ответ МойСклад).
  * @param {object} body
  * @param {string|undefined} requestId query-параметр
@@ -41,7 +59,7 @@ async function processMoyskladWebhookBody(body, requestId) {
       const order = await fetchEntityByHref(href);
       if (!order) continue;
 
-      const stateName = order.state?.name ?? '';
+      const stateName = await getCustomerOrderStateName(order);
       const orderName = order.name ?? order.id ?? '?';
       const match = stateName === targetState;
 
