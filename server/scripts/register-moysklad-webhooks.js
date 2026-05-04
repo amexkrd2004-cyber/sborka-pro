@@ -54,6 +54,19 @@ async function main() {
     });
     const bodyText = await res.text();
     if (!res.ok) {
+      let dup = false;
+      if (res.status === 412) {
+        try {
+          const j = JSON.parse(bodyText);
+          dup = Array.isArray(j.errors) && j.errors.some((e) => Number(e.code) === 30003);
+        } catch {
+          /* ignore */
+        }
+      }
+      if (dup) {
+        console.log(`${action}: уже зарегистрирован (дубликат), пропуск`);
+        continue;
+      }
       console.error(`Ошибка ${action}: HTTP ${res.status}\n${bodyText}`);
       process.exit(1);
     }

@@ -8,7 +8,8 @@ const { getPool } = require('../db');
 
 const router = express.Router();
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+/** МойСклад отдаёт UUID не всегда в «каноническом» виде RFC (4-й блок может начинаться не с 8/9/a/b). */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 router.use(requireAuth);
 router.use(requireDb);

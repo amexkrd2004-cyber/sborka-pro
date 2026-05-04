@@ -8,7 +8,9 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "moysklad:register-webhooks": "node scripts/register-moysklad-webhooks.js",
-    "db:seed": "node scripts/seed-admin.js"
+    "db:seed": "node scripts/seed-admin.js",
+    "auth:test": "node scripts/test-auth-login.js",
+    "orders:test": "node scripts/test-orders-flow.js"
   },
   "engines": {
     "node": ">=18"
