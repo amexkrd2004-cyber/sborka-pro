@@ -40,7 +40,7 @@
 | Путь | Содержимое |
 |------|------------|
 | `server/` | Backend: Node.js + Express. Вход `server/src/index.js`, БД `server/src/db/`, webhook `server/src/routes/webhook.js`, auth `server/src/routes/auth.js`, заказы `server/src/routes/orders.js`, МойСклад `server/src/services/moyskladApi.js`, `moyskladWebhookWorker.js`, `moyskladOrders.js`. См. `server/README.md`, **`docs/moysklad-integration.md`**. |
-| `mobile/` | *(планируется, фаза C)* Expo/React Native |
+| `mobile/` | **Expo (SDK 54)**, TypeScript: вход, список заказов, карточка, «Взять в работу» (`claim`). См. `mobile/README.md`, `EXPO_PUBLIC_API_URL` в `.env`. |
 | `web/` | *(планируется, фаза E)* админ-панель |
 
 ---
@@ -61,15 +61,27 @@
 
 ### Фаза B — Минимальный бэкенд
 
-**Прогресс (2026-05-04):** PostgreSQL, схема таблиц, **`POST /auth/login`**, **`GET /auth/me`**, **`POST /auth/register-token`**, **`GET /orders`**, **`GET /orders/:id`**, **`POST /orders/:id/claim`** (атомарный захват). Осталось: **`PATCH /orders/:id/status`** (обновление статуса в МойСклад), журнал уведомлений, доработка ролей/складов по ТЗ.
+**Прогресс (2026-05-04):** PostgreSQL, схема таблиц, **`POST /auth/login`**, **`GET /auth/me`**, **`POST /auth/register-token`**, **`GET /orders`**, **`GET /orders/:id`**, **`POST /orders/:id/claim`** (атомарный захват). Осталось по бэкенду: **`PATCH /orders/:id/status`**, журнал уведомлений, доработка ролей/складов по ТЗ — см. блок **«Временно отложено»** ниже: часть работ перенесена после мобильного MVP.
 
 1. ~~Таблицы: пользователи (кладовщики), привязка к складам, push-токены, журнал уведомлений, `assembly_log`, отказы, настройки (по ТЗ).~~ ✅ Первый набор в `server/src/db/schema.sql` (users, assembly_claims, push_tokens, assembly_log, order_refusals, app_settings); сид админа `npm run db:seed`.
 2. ~~`POST /auth/login`, `POST /auth/register-token`, `GET /orders`, `GET /orders/:id`~~ ✅ **`PATCH /orders/:id/status`** — пока заглушка 501 (обновление в МойСклад — следующий шаг).
 3. ~~Защита **«кто первый взял заказ»** — атомарное назначение~~ ✅ `POST /orders/:id/claim` + `ON CONFLICT DO NOTHING` в PostgreSQL.
 
+### Временно отложено — **обязательно вернуться**
+
+*Причина переноса (2026-05-04): ждём окончательные названия статусов в МойСклад; ещё не готовы статус «Сборка (в работе)» и доп. поля под штрихкод. Мобильный MVP идёт без смены статусов из приложения.*
+
+| Задача | Что сделать потом |
+|--------|-------------------|
+| Статусы и API | Реализовать **`PATCH /orders/:id/status`**, согласовать с МойСклад имена и переходы; учесть статус **«в работе»** у сборщика при необходимости. |
+| Данные для ШК | Доп. поля / атрибуты заказа в МойСклад под формирование штрихкода — см. ТЗ, затем догрузка в API/приложение. |
+| Вебхук / worker | При смене имён статусов — проверить **`MOYSKLAD_ASSEMBLY_STATE_NAME`** и логику **`assemblyMatch`** в worker. |
+
 ### Фаза C — Мобильное приложение (MVP)
 
-1. Экран входа, список заказов в статусе «Сборка», карточка заказа.
+**Статус (2026-05-04):** создан каталог **`mobile/`** (Expo + TypeScript), навигация, **`POST /auth/login`**, **`GET /orders`**, карточка **`GET /orders/:id`**, кнопка **`POST …/claim`**. Кнопки «Собрано» / отгрузка и т.д. — после блока «Временно отложено».
+
+1. ~~Экран входа, список заказов в статусе «Сборка», карточка заказа.~~ ✅ первая версия в `mobile/` (список = ответ сервера; фильтр статуса на стороне МойСклад/сервера).
 2. Сканер ШК и отметка товаров; кнопки **Собрано** / **Отгружено** / **Выдано клиенту** по логике ТЗ.
 3. Push при появлении заказа на складе кладовщика.
 4. Сборка **development/EAS** — не Expo Go из-за нативных модулей (печать).
@@ -135,6 +147,7 @@
 - **2026-05-03** — Интеграция МойСклад: зафиксирована в **`docs/moysklad-integration.md`** (2 вебхука, формат `events`, `MOYSKLAD_TOKEN`, асинхронный worker); код: `moyskladApi.js`, `moyskladWebhookWorker.js`.
 - **2026-05-04** — **Фаза A закрыта на проде:** вебхуки доставляются, HTTP 200; worker с токеном на Railway; **`assemblyMatch: true`** при статусе «Сборка» (догрузка имени статуса по `state.meta.href`). Заглушка «TODO phase B» — сигнал к разработке фазы B, а не к доработке A.
 - **2026-05-04** — **Старт фазы B:** PostgreSQL (`DATABASE_URL`), JWT (`JWT_SECRET`), схема в `server/src/db/schema.sql`, эндпоинты `/auth/*`, `/orders`, захват заказа `POST /orders/:id/claim`. Прод без БД не обязателен: без `DATABASE_URL` сервер остаётся в режиме A.
+- **2026-05-04** — **Приоритет:** сначала **мобильное приложение** (фаза C MVP), затем доработка **`PATCH /orders/:id/status`** и согласование статусов / доп. полей под штрихкод (зафиксировано в разделе **«Временно отложено»** — возврат обязателен).
 
 ---
 
@@ -167,6 +180,8 @@
 | 2026-05-04 | **`docs/railway-sborka-pro.md` v1.6:** шаг 7 — подробная инструкция для новичка (Postgres, `DATABASE_URL`, `JWT_SECRET`, сид, проверки curl); строки в «Типичные проблемы». |
 | 2026-05-04 | **`docs/railway-sborka-pro.md` v1.6.2:** шаг 7.3 — **`DATABASE_PUBLIC_URL`** и Variable Reference; локальный `.env` для сида; `server/.env.example` и `server/README.md`. |
 | 2026-05-04 | **`systemnyy-administrator.md`:** таблица env и раздел 5 — PostgreSQL Railway, сид, публичный URL. |
+| 2026-05-04 | **`mobile/`:** Expo SDK 54 (TypeScript), `@react-navigation/native-stack`, `expo-secure-store`, экраны вход / список заказов / карточка + **«Взять в работу»** (`claim`). `EXPO_PUBLIC_API_URL`, `.env.example`, `mobile/README.md`. Корневой `.gitignore` — `mobile/node_modules`, `mobile/.env`. В **`sborka.md`**: раздел **«Временно отложено — обязательно вернуться»** (статусы, ШК), приоритет мобилки перед PATCH статуса. |
+| 2026-05-04 | Памятка раздела 8 обновлена под фазу C и отложенный PATCH статуса. |
 
 ---
 
@@ -174,8 +189,8 @@
 
 Скопируйте в чат при необходимости:
 
-> Проект СборкаПро: контекст и план в файле `sborka.md` (актуализация руководств — раздел 5.1). Backend: `server/README.md`, МойСклад: `docs/moysklad-integration.md`, деплой: `docs/railway-sborka-pro.md`. Руководства в `docs/rukovodstva/`. ТЗ в `ТЗ_СборкаПро.docx`. МойСклад ↔ amoCRM (amgroup) уже связаны. **Фаза A завершена** (Railway HTTPS, вебхуки, worker, `assemblyMatch` для «Сборки»). **Фаза B в работе:** PostgreSQL + JWT + `/orders` + `claim` готовы; дальше — **PATCH статуса в МойСклад** и прочее по ТЗ. Продолжаем: [уточнить шаг].
+> Проект СборкаПро: контекст и план в файле `sborka.md` (актуализация руководств — раздел 5.1). Backend: `server/README.md`, МойСклад: `docs/moysklad-integration.md`, деплой: `docs/railway-sborka-pro.md`. Мобилка: **`mobile/README.md`**, `EXPO_PUBLIC_API_URL`. Руководства в `docs/rukovodstva/`. ТЗ в `ТЗ_СборкаПро.docx`. МойСклад ↔ amoCRM (amgroup) уже связаны. **Фаза A завершена.** **Фаза B (ядро):** PostgreSQL + JWT + `/orders` + `claim` на проде. **`PATCH /orders/:id/status` и финальные статусы / ШК — отложены** (раздел «Временно отложено», возврат обязателен). **Фаза C:** стартовал каталог `mobile/`. Продолжаем: [уточнить шаг].
 
 ---
 
-*Последнее обновление файла: 2026-05-04*
+*Последнее обновление файла: 2026-05-04 (мобильное приложение + блок отложенных статусов/ШК).*

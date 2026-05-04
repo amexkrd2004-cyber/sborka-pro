@@ -1,4 +1,6 @@
 server/node_modules/
 server/.env
+mobile/node_modules/
+mobile/.env
 *.log
 .DS_Store
