@@ -154,7 +154,7 @@ npm.cmd run android
 | Симптом | Что сделать |
 |--------|-------------|
 | **`npx.ps1`**, «выполнение сценариев отключено», **PSSecurityException** | См. раздел **«Если красная ошибка…»** выше: **`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`** или команды через **`npx.cmd`** / **cmd**. |
-| На Android красный экран **`java.lang.String cannot be cast to java.lang.Boolean`** сразу при открытии | Навигация переведена на **`@react-navigation/stack`** (JS‑стек), плюс **`gesture-handler`**, **`SafeAreaProvider`**, **`@react-native-masked-view/masked-view`**. В **`app.json`** для Android убраны **`edgeToEdgeEnabled`** / **`predictiveBackGestureEnabled`** (могли провоцировать нативные баги в Expo Go). Остановите Metro, **`npx.cmd expo start -c`**, **Reload** в Expo Go. |
+| На Android красный экран **`java.lang.String cannot be cast to java.lang.Boolean`** сразу при открытии | **React Navigation убран из MVP:** переключение экранов через **`useState`** в `RootNavigator.tsx` (вход → список → карточка). Зависимости навигации и **`react-native-gesture-handler`** удалены. Остановите Metro, **`npm.cmd install`**, **`npx.cmd expo start -c`**, полностью закройте проект в Expo Go и откройте снова по QR. |
 | «Не задан EXPO_PUBLIC_API_URL» на экране входа | Проверьте `.env` в **`mobile`**, перезапустите **`npx.cmd expo start -c`**. |
 | Телефон не открывает проект по QR | Убедитесь, что телефон и ПК в одной Wi‑Fi; попробуйте в терминале нажать **`s`** и переключить на **Tunnel** (медленнее, но обходит часть сетей). |
 | `npm` не находится | Перезапустите терминал после установки Node; проверьте `node -v` и `npm -v`. |

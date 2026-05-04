@@ -7,12 +7,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import type { StackScreenProps } from '@react-navigation/stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiError, claimOrder, fetchOrder } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import type { RootStackParamList } from '../navigation/types';
 
-type Props = StackScreenProps<RootStackParamList, 'OrderDetail'>;
+type Props = {
+  orderId: string;
+  onGoBack: () => void;
+};
 
 function pickString(o: Record<string, unknown>, key: string): string | undefined {
   const v = o[key];
@@ -24,8 +26,8 @@ function pickNumber(o: Record<string, unknown>, key: string): number | undefined
   return typeof v === 'number' ? v : undefined;
 }
 
-export default function OrderDetailScreen({ route, navigation }: Props) {
-  const { id } = route.params;
+export default function OrderDetailScreen({ orderId: id, onGoBack }: Props) {
+  const insets = useSafeAreaInsets();
   const { token } = useAuth();
   const [order, setOrder] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,7 +88,7 @@ export default function OrderDetailScreen({ route, navigation }: Props) {
     return (
       <View style={styles.centered}>
         <Text style={styles.errText}>{error ?? 'Заказ не найден'}</Text>
-        <Pressable style={styles.secondaryBtn} onPress={() => navigation.goBack()}>
+        <Pressable style={styles.secondaryBtn} onPress={onGoBack}>
           <Text style={styles.secondaryBtnText}>Назад</Text>
         </Pressable>
       </View>
@@ -101,36 +103,53 @@ export default function OrderDetailScreen({ route, navigation }: Props) {
     state && typeof state.name === 'string' ? state.name : pickString(order, 'stateName');
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{name ?? 'Заказ'}</Text>
-      {moment ? <Text style={styles.meta}>{moment}</Text> : null}
-      {sum != null ? <Text style={styles.meta}>Сумма: {sum} ₽</Text> : null}
-      {stateName ? <Text style={styles.meta}>Статус: {stateName}</Text> : null}
+    <View style={styles.wrap}>
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 8) + 4 }]}>
+        <Pressable onPress={onGoBack} hitSlop={12} style={styles.backPress}>
+          <Text style={styles.backText}>← Назад</Text>
+        </Pressable>
+      </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <Text style={styles.title}>{name ?? 'Заказ'}</Text>
+        {moment ? <Text style={styles.meta}>{moment}</Text> : null}
+        {sum != null ? <Text style={styles.meta}>Сумма: {sum} ₽</Text> : null}
+        {stateName ? <Text style={styles.meta}>Статус: {stateName}</Text> : null}
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {message ? <Text style={styles.info}>{message}</Text> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {message ? <Text style={styles.info}>{message}</Text> : null}
 
-      <Pressable
-        style={[styles.primaryBtn, claimBusy && styles.btnDisabled]}
-        onPress={onClaim}
-        disabled={claimBusy}
-      >
-        {claimBusy ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.primaryBtnText}>Взять в работу</Text>
-        )}
-      </Pressable>
+        <Pressable
+          style={[styles.primaryBtn, claimBusy && styles.btnDisabled]}
+          onPress={onClaim}
+          disabled={claimBusy}
+        >
+          {claimBusy ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.primaryBtnText}>Взять в работу</Text>
+          )}
+        </Pressable>
 
-      <Text style={styles.hint}>
-        Смена статусов в МойСклад из приложения будет после согласования названий статусов и
-        доработки API на сервере.
-      </Text>
-    </ScrollView>
+        <Text style={styles.hint}>
+          Смена статусов в МойСклад из приложения будет после согласования названий статусов и
+          доработки API на сервере.
+        </Text>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrap: { flex: 1, backgroundColor: '#eef1f5' },
+  topBar: {
+    paddingBottom: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#c5d0dc',
+  },
+  backPress: { alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 4 },
+  backText: { fontSize: 16, color: '#1a5fb4', fontWeight: '600' },
   scroll: { flex: 1, backgroundColor: '#eef1f5' },
   content: { padding: 16, paddingBottom: 32 },
   centered: {

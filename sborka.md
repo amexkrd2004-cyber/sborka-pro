@@ -40,7 +40,7 @@
 | Путь | Содержимое |
 |------|------------|
 | `server/` | Backend: Node.js + Express. Вход `server/src/index.js`, БД `server/src/db/`, webhook `server/src/routes/webhook.js`, auth `server/src/routes/auth.js`, заказы `server/src/routes/orders.js`, МойСклад `server/src/services/moyskladApi.js`, `moyskladWebhookWorker.js`, `moyskladOrders.js`. См. `server/README.md`, **`docs/moysklad-integration.md`**. |
-| `mobile/` | **Expo (SDK 54)**, TypeScript: вход, список заказов, карточка, «Взять в работу» (`claim`). См. `mobile/README.md`, `EXPO_PUBLIC_API_URL` в `.env`. |
+| `mobile/` | **Expo (SDK 54)**, TypeScript: вход, список заказов, карточка, «Взять в работу» (`claim`). Навигация пока **без React Navigation** (`useState` в `RootNavigator`) — обход краша Expo Go на Android. См. `mobile/README.md`, `EXPO_PUBLIC_API_URL` в `.env`. |
 | `web/` | *(планируется, фаза E)* админ-панель |
 
 ---
@@ -182,6 +182,7 @@
 | 2026-05-04 | **`systemnyy-administrator.md`:** таблица env и раздел 5 — PostgreSQL Railway, сид, публичный URL. |
 | 2026-05-04 | **`mobile/`:** Expo SDK 54 (TypeScript), `@react-navigation/native-stack`, `expo-secure-store`, экраны вход / список заказов / карточка + **«Взять в работу»** (`claim`). `EXPO_PUBLIC_API_URL`, `.env.example`, `mobile/README.md`. Корневой `.gitignore` — `mobile/node_modules`, `mobile/.env`. В **`sborka.md`**: раздел **«Временно отложено — обязательно вернуться»** (статусы, ШК), приоритет мобилки перед PATCH статуса. |
 | 2026-05-04 | Памятка раздела 8 обновлена под фазу C и отложенный PATCH статуса. |
+| 2026-05-04 | **Мобилка:** из‑за стабильного краша `String→Boolean` в Expo Go на Android убраны **React Navigation** и **gesture-handler**; экраны переключаются в **`RootNavigator`** через state; обновлены `mobile/README.md`, таблица структуры в **`sborka.md`**. |
 
 ---
 

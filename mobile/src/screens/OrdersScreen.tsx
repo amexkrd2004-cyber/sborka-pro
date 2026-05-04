@@ -8,15 +8,15 @@ import {
   Text,
   View,
 } from 'react-native';
-import type { StackScreenProps } from '@react-navigation/stack';
 import { ApiError, fetchOrders } from '../api/client';
 import type { OrderSummary } from '../api/types';
 import { useAuth } from '../context/AuthContext';
-import type { RootStackParamList } from '../navigation/types';
 
-type Props = StackScreenProps<RootStackParamList, 'Orders'>;
+type Props = {
+  onSelectOrder: (id: string) => void;
+};
 
-export default function OrdersScreen({ navigation }: Props) {
+export default function OrdersScreen({ onSelectOrder }: Props) {
   const { token, logout } = useAuth();
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,10 +51,7 @@ export default function OrdersScreen({ navigation }: Props) {
 
   function renderItem({ item }: { item: OrderSummary }) {
     return (
-      <Pressable
-        style={styles.row}
-        onPress={() => navigation.navigate('OrderDetail', { id: item.id })}
-      >
+      <Pressable style={styles.row} onPress={() => onSelectOrder(item.id)}>
         <Text style={styles.rowTitle}>{item.name}</Text>
         {item.stateName ? <Text style={styles.rowMeta}>{item.stateName}</Text> : null}
         {item.sum != null ? <Text style={styles.rowMeta}>{item.sum} ₽</Text> : null}

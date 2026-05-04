@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -36,10 +34,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={styles.root}>
       <View style={styles.card}>
         <Text style={styles.title}>СборкаПро</Text>
         <Text style={styles.subtitle}>Вход кладовщика</Text>
@@ -85,7 +80,7 @@ export default function LoginScreen() {
           )}
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
