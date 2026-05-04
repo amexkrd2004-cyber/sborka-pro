@@ -11,6 +11,21 @@ import { ApiError } from '../api/client';
 import { getApiBase } from '../config';
 import { useAuth } from '../context/AuthContext';
 
+function formatLoginError(e: unknown): string {
+  if (!(e instanceof ApiError)) {
+    return 'Ошибка входа';
+  }
+  if (e.message === 'invalid_credentials') {
+    return (
+      'Неверный логин или пароль.\n\n' +
+      'Проверьте: нет ли лишнего пробела в конце пароля; логин как в базе (регистр букв). ' +
+      'В .env должен быть тот же сервер, для которого делали db:seed (см. строку «Сервер» ниже). ' +
+      'Если меняли пароль в .env, но не перезапускали сид — в базе старый пароль; выполните npm run db:seed ещё раз.'
+    );
+  }
+  return e.message;
+}
+
 export default function LoginScreen() {
   const { login } = useAuth();
   const [userLogin, setUserLogin] = useState('');
@@ -18,16 +33,16 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const apiMissing = !getApiBase();
+  const apiBase = getApiBase();
+  const apiMissing = !apiBase;
 
   async function onSubmit() {
     setError(null);
     setBusy(true);
     try {
-      await login(userLogin.trim(), password);
+      await login(userLogin.trim(), password.trim());
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : 'Ошибка входа';
-      setError(msg);
+      setError(formatLoginError(e));
     } finally {
       setBusy(false);
     }
@@ -38,6 +53,7 @@ export default function LoginScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>СборкаПро</Text>
         <Text style={styles.subtitle}>Вход кладовщика</Text>
+        {!apiMissing ? <Text style={styles.apiHint}>Сервер: {apiBase}</Text> : null}
 
         {apiMissing ? (
           <Text style={styles.warn}>
@@ -108,9 +124,14 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 4,
-    marginBottom: 20,
+    marginBottom: 6,
     fontSize: 15,
     color: '#5a6b7d',
+  },
+  apiHint: {
+    fontSize: 12,
+    color: '#7a8a9a',
+    marginBottom: 16,
   },
   label: {
     fontSize: 13,

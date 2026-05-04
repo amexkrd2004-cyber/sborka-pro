@@ -38,7 +38,8 @@ router.post('/login', requireDb, express.json(), async (req, res) => {
   }
 
   const login = typeof req.body?.login === 'string' ? req.body.login.trim() : '';
-  const password = typeof req.body?.password === 'string' ? req.body.password : '';
+  const password =
+    typeof req.body?.password === 'string' ? req.body.password.trim() : '';
   if (!login || !password) {
     return res.status(400).json({ error: 'bad_request', message: 'Нужны поля login и password (строки).' });
   }
