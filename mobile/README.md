@@ -154,6 +154,7 @@ npm.cmd run android
 | Симптом | Что сделать |
 |--------|-------------|
 | **`npx.ps1`**, «выполнение сценариев отключено», **PSSecurityException** | См. раздел **«Если красная ошибка…»** выше: **`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`** или команды через **`npx.cmd`** / **cmd**. |
+| На Android красный экран **`java.lang.String cannot be cast to java.lang.Boolean`** сразу при открытии | В проекте подключены **`react-native-gesture-handler`** и обёртки **`GestureHandlerRootView`** + **`SafeAreaProvider`**. Остановите Metro (**Ctrl+C**), снова **`npx.cmd expo start -c`**, в Expo Go нажмите **Reload**. Если ошибка останется — в **`app.json`** временно поставьте **`"newArchEnabled": false`** и снова **`-c`**. |
 | «Не задан EXPO_PUBLIC_API_URL» на экране входа | Проверьте `.env` в **`mobile`**, перезапустите **`npx.cmd expo start -c`**. |
 | Телефон не открывает проект по QR | Убедитесь, что телефон и ПК в одной Wi‑Fi; попробуйте в терминале нажать **`s`** и переключить на **Tunnel** (медленнее, но обходит часть сетей). |
 | `npm` не находится | Перезапустите терминал после установки Node; проверьте `node -v` и `npm -v`. |
