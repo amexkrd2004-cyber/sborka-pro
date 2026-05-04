@@ -184,6 +184,7 @@
 | 2026-05-04 | Памятка раздела 8 обновлена под фазу C и отложенный PATCH статуса. |
 | 2026-05-04 | **Мобилка:** из‑за стабильного краша `String→Boolean` в Expo Go на Android убраны **React Navigation** и **gesture-handler**; экраны переключаются в **`RootNavigator`** через state; обновлены `mobile/README.md`, таблица структуры в **`sborka.md`**. |
 | 2026-05-04 | **`mobile/app.json`:** убран **`newArchEnabled": false`** — в Expo Go новая архитектура всё равно включена; явное `false` давало предупреждение и рассинхрон с [документацией Expo](https://docs.expo.dev/guides/new-architecture/). |
+| 2026-05-04 | Суммы МойСклад в API — в копейках; добавлен **`server/src/lib/moyskladMoney.js`**, **`GET /orders`** и **`GET /orders/:id`** отдают рубли; в **`mobile`** форматирование **`formatRubles`**; **`docs/moysklad-integration.md`**. |
 
 ---
 

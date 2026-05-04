@@ -11,6 +11,7 @@ import {
 import { ApiError, fetchOrders } from '../api/client';
 import type { OrderSummary } from '../api/types';
 import { useAuth } from '../context/AuthContext';
+import { formatRubles } from '../lib/formatMoney';
 
 type Props = {
   onSelectOrder: (id: string) => void;
@@ -54,7 +55,7 @@ export default function OrdersScreen({ onSelectOrder }: Props) {
       <Pressable style={styles.row} onPress={() => onSelectOrder(item.id)}>
         <Text style={styles.rowTitle}>{item.name}</Text>
         {item.stateName ? <Text style={styles.rowMeta}>{item.stateName}</Text> : null}
-        {item.sum != null ? <Text style={styles.rowMeta}>{item.sum} ₽</Text> : null}
+        {item.sum != null ? <Text style={styles.rowMeta}>{formatRubles(item.sum)} ₽</Text> : null}
       </Pressable>
     );
   }

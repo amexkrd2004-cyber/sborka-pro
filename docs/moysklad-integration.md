@@ -133,8 +133,11 @@
 | `server/src/routes/webhook.js` | Приём POST, быстрый ответ, запуск асинхронной обработки. |
 | `server/src/services/moyskladWebhookWorker.js` | Разбор `events`, запрос заказа, логика «попал ли в Сборку». |
 | `server/src/services/moyskladApi.js` | Минимальный клиент GET по `href`. |
+| `server/src/lib/moyskladMoney.js` | Поля **`sum`** и др. в ответе МойСклад — в **копейках**; перед отдачей в **`GET /orders`** и **`GET /orders/:id`** перевод в рубли. |
 | `docs/railway-sborka-pro.md` | Шаг 6: как создать вебхуки через API. |
 | `sborka.md` | План фаз; при смене статусов/полей — журнал. |
+
+Суммы в карточке заказа в интерфейсе МойСклад показываются в рублях; в JSON API те же значения приходят в минимальных единицах — это учтено на сервере.
 
 ---
 

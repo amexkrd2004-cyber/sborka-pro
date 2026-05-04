@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiError, claimOrder, fetchOrder } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { formatRubles } from '../lib/formatMoney';
 
 type Props = {
   orderId: string;
@@ -112,7 +113,7 @@ export default function OrderDetailScreen({ orderId: id, onGoBack }: Props) {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <Text style={styles.title}>{name ?? 'Заказ'}</Text>
         {moment ? <Text style={styles.meta}>{moment}</Text> : null}
-        {sum != null ? <Text style={styles.meta}>Сумма: {sum} ₽</Text> : null}
+        {sum != null ? <Text style={styles.meta}>Сумма: {formatRubles(sum)} ₽</Text> : null}
         {stateName ? <Text style={styles.meta}>Статус: {stateName}</Text> : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}

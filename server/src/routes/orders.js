@@ -4,6 +4,7 @@ const express = require('express');
 const { requireAuth } = require('../middleware/requireAuth');
 const { requireDb } = require('../middleware/requireDb');
 const { listCustomerOrdersForAssembly, getCustomerOrderById } = require('../services/moyskladOrders');
+const { normalizeCustomerOrder, summarizeOrderSum } = require('../lib/moyskladMoney');
 const { getPool } = require('../db');
 
 const router = express.Router();
@@ -18,7 +19,7 @@ function summarizeOrder(row) {
   const id = row.id;
   const name = row.name;
   const moment = row.moment;
-  const sum = row.sum;
+  const sum = summarizeOrderSum(row.sum);
   const stateName = row.state?.name ?? null;
   const href = row.meta?.href ?? null;
   return { id, name, moment, sum, stateName, href };
@@ -112,7 +113,7 @@ router.get('/:id', async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: 'not_found' });
     }
-    res.json({ order });
+    res.json({ order: normalizeCustomerOrder(order) });
   } catch (err) {
     if (err.code === 'MS_NO_TOKEN') {
       return res.status(503).json({ error: 'moysklad_not_configured', message: err.message });
