@@ -7,12 +7,12 @@ import {
   Text,
   View,
 } from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { StackScreenProps } from '@react-navigation/stack';
 import { ApiError, claimOrder, fetchOrder } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import type { RootStackParamList } from '../navigation/types';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'OrderDetail'>;
+type Props = StackScreenProps<RootStackParamList, 'OrderDetail'>;
 
 function pickString(o: Record<string, unknown>, key: string): string | undefined {
   const v = o[key];

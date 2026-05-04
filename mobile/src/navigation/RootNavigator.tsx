@@ -1,14 +1,15 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
 import type { RootStackParamList } from './types';
 import LoginScreen from '../screens/LoginScreen';
 import OrdersScreen from '../screens/OrdersScreen';
 import OrderDetailScreen from '../screens/OrderDetailScreen';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+/** JS Stack вместо native-stack — в Expo Go на Android у native-stack часто падает `String cannot be cast to Boolean`. */
+const Stack = createStackNavigator<RootStackParamList>();
 
 const navTheme = {
   ...DefaultTheme,
@@ -33,6 +34,7 @@ export default function RootNavigator() {
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator
         screenOptions={{
+          cardStyle: { backgroundColor: '#eef1f5' },
           headerStyle: { backgroundColor: '#fff' },
           headerTintColor: '#1a2b45',
           headerTitleStyle: { fontWeight: '600' },
@@ -42,11 +44,7 @@ export default function RootNavigator() {
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         ) : (
           <>
-            <Stack.Screen
-              name="Orders"
-              component={OrdersScreen}
-              options={{ headerShown: false, headerBackVisible: false }}
-            />
+            <Stack.Screen name="Orders" component={OrdersScreen} options={{ headerShown: false }} />
             <Stack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ title: 'Заказ' }} />
           </>
         )}

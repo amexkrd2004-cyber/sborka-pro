@@ -8,13 +8,13 @@ import {
   Text,
   View,
 } from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { StackScreenProps } from '@react-navigation/stack';
 import { ApiError, fetchOrders } from '../api/client';
 import type { OrderSummary } from '../api/types';
 import { useAuth } from '../context/AuthContext';
 import type { RootStackParamList } from '../navigation/types';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Orders'>;
+type Props = StackScreenProps<RootStackParamList, 'Orders'>;
 
 export default function OrdersScreen({ navigation }: Props) {
   const { token, logout } = useAuth();
