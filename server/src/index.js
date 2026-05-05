@@ -2,11 +2,12 @@ require('dotenv').config();
 
 const { initDb } = require('./db');
 const { createApp } = require('./app');
+const { startOrderEscalationLoop } = require('./services/orderEscalationLoop');
 
 const port = Number(process.env.PORT) || 3000;
 
 async function main() {
-  await initDb();
+  const dbOk = await initDb();
   const app = createApp();
 
   app.listen(port, () => {
@@ -15,6 +16,7 @@ async function main() {
     console.log(`Webhook: POST http://127.0.0.1:${port}/webhook/moysklad`);
     console.log(`Auth: POST http://127.0.0.1:${port}/auth/login`);
     console.log(`Orders: GET http://127.0.0.1:${port}/orders (Bearer JWT)`);
+    if (dbOk) startOrderEscalationLoop();
   });
 }
 

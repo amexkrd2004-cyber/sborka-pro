@@ -81,11 +81,15 @@ router.patch('/:id/status', express.json(), async (req, res) => {
     const normalized = normalizeCustomerOrder(updated);
     normalized.stateName = targetStatus;
 
-    await getPool().query(
+    const pool = getPool();
+    await pool.query(
       `INSERT INTO assembly_log (moysklad_order_id, user_id, event_type, payload)
        VALUES ($1::uuid, $2::uuid, 'status_changed', $3::jsonb)`,
       [id.toLowerCase(), req.user.id, JSON.stringify({ from: currentStatus, to: targetStatus, source: 'api' })]
     );
+    await pool.query(`DELETE FROM order_escalations WHERE moysklad_order_id = $1::uuid`, [
+      id.toLowerCase(),
+    ]);
 
     return res.json({
       ok: true,
@@ -97,7 +101,7 @@ router.patch('/:id/status', express.json(), async (req, res) => {
     if (err.code === 'MS_NO_TOKEN') {
       return res.status(503).json({ error: 'moysklad_not_configured', message: err.message });
     }
-    if (err.code === 'MS_STATE_NOT_FOUND') {
+    if (err.code === 'MS_STATE_NOT_FOUND' || err.code === 'MS_STATES_UNAVAILABLE') {
       return res.status(400).json({ error: 'bad_request', message: err.message });
     }
     console.error('[orders] patch status failed', err.message);
@@ -135,6 +139,7 @@ router.post('/:id/claim', async (req, res) => {
     const row = cur.rows[0];
     const mine = row && String(row.claimed_by_user_id) === String(userId);
     if (mine) {
+      await pool.query(`DELETE FROM order_escalations WHERE moysklad_order_id = $1::uuid`, [orderId]);
       return res.status(200).json({ claimed: true, already: true, claimedAt: row.claimed_at });
     }
     return res.status(409).json({
@@ -148,6 +153,7 @@ router.post('/:id/claim', async (req, res) => {
      VALUES ($1::uuid, $2::uuid, 'claimed', $3::jsonb)`,
     [orderId, userId, JSON.stringify({ source: 'api' })]
   );
+  await pool.query(`DELETE FROM order_escalations WHERE moysklad_order_id = $1::uuid`, [orderId]);
 
   res.status(201).json({
     claimed: true,

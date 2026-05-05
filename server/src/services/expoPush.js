@@ -9,10 +9,24 @@ function isExpoPushToken(token) {
 
 /**
  * Отправка push-уведомления в Expo.
- * @param {{ to: string, title: string, body: string, data?: object }[]} messages
+ * @param {{ to: string, title: string, body: string, data?: object, sound?: string, priority?: string, channelId?: string }[]} messages
  */
 async function sendExpoPushBatch(messages) {
-  const clean = (messages || []).filter((m) => isExpoPushToken(m.to));
+  const clean = (messages || [])
+    .filter((m) => isExpoPushToken(m.to))
+    .map((m) => {
+      const channelId = m.channelId || 'default';
+      const priority = m.priority || 'high';
+      return {
+        to: m.to,
+        title: m.title,
+        body: m.body,
+        data: m.data,
+        sound: m.sound ?? 'default',
+        priority,
+        channelId,
+      };
+    });
   if (clean.length === 0) return { sent: 0, errors: [] };
 
   const res = await fetch(EXPO_PUSH_URL, {

@@ -92,6 +92,13 @@ async function processMoyskladWebhookBody(body, requestId) {
            WHERE expo_push_token IS NOT NULL
              AND length(trim(expo_push_token)) > 0`
         );
+        await pool.query(
+          `INSERT INTO order_escalations (moysklad_order_id, fire_at)
+           VALUES ($1::uuid, now() + interval '10 minutes')
+           ON CONFLICT (moysklad_order_id) DO UPDATE SET fire_at = EXCLUDED.fire_at`,
+          [String(order.id).toLowerCase()]
+        );
+
         const pushTokens = tokensRes.rows.map((r) => String(r.expo_push_token || '').trim());
         if (pushTokens.length === 0) {
           console.log('[moysklad-worker] no push tokens registered');
@@ -104,6 +111,8 @@ async function processMoyskladWebhookBody(body, requestId) {
             title: 'Новый заказ в сборке',
             body: `Заказ ${orderName} ожидает сборки`,
             data: { orderId: order.id, orderName, stateName },
+            channelId: 'default',
+            priority: 'high',
           }))
         );
         await pool.query(

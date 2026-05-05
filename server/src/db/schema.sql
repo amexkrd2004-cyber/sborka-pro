@@ -35,6 +35,14 @@ CREATE TABLE IF NOT EXISTS assembly_log (
 
 CREATE INDEX IF NOT EXISTS idx_assembly_log_order ON assembly_log (moysklad_order_id);
 
+CREATE TABLE IF NOT EXISTS order_escalations (
+  moysklad_order_id UUID PRIMARY KEY,
+  fire_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_escalations_fire ON order_escalations (fire_at);
+
 CREATE TABLE IF NOT EXISTS order_refusals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   moysklad_order_id UUID NOT NULL,

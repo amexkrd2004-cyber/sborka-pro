@@ -91,15 +91,14 @@ async function getCustomerOrderStateName(order) {
   return getStateNameByHref(states, href);
 }
 
-async function getCustomerOrderStatesMetadata() {
+async function moyskladGetJson(url) {
   const token = getToken();
   if (!token) {
     const e = new Error('MOYSKLAD_TOKEN not configured');
     e.code = 'MS_NO_TOKEN';
     throw e;
   }
-  const metaUrl = `${DEFAULT_BASE}/entity/customerorder/metadata`;
-  const metaRes = await fetch(metaUrl, {
+  const res = await fetch(url, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -107,35 +106,59 @@ async function getCustomerOrderStatesMetadata() {
       'Accept-Encoding': 'gzip',
     },
   });
-  const metaText = await metaRes.text();
-  if (metaRes.ok) {
-    const metaData = JSON.parse(metaText);
-    if (Array.isArray(metaData.states)) {
-      return metaData.states;
+  const text = await res.text();
+  if (!res.ok) {
+    const err = new Error(`MoySklad GET ${res.status}: ${text.slice(0, 300)}`);
+    err.code = 'MS_HTTP';
+    err.status = res.status;
+    throw err;
+  }
+  return JSON.parse(text);
+}
+
+function normalizeStatesPayload(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (raw && Array.isArray(raw.rows)) return raw.rows;
+  return [];
+}
+
+/**
+ * Справочник статусов заказа покупателя. В МойСклад `metadata.states` часто не массив,
+ * а ссылка `meta.href` на коллекцию; жёсткий путь `.../metadata/states` на части аккаунтов даёт 405.
+ */
+async function getCustomerOrderStatesMetadata() {
+  const metaUrl = `${DEFAULT_BASE}/entity/customerorder/metadata`;
+  const metaData = await moyskladGetJson(metaUrl);
+
+  const inline = normalizeStatesPayload(metaData.states);
+  if (inline.length > 0) {
+    return inline;
+  }
+
+  const href = metaData.states?.meta?.href;
+  if (typeof href === 'string' && href.trim()) {
+    try {
+      const coll = await moyskladGetJson(href.trim());
+      const fromHref = normalizeStatesPayload(coll);
+      if (fromHref.length > 0) return fromHref;
+    } catch (err) {
+      console.warn('[moysklad] states meta.href fetch failed', err.message);
     }
   }
 
-  // Fallback для окружений, где список статусов отдается отдельным ресурсом.
-  const statesUrl = `${DEFAULT_BASE}/entity/customerorder/metadata/states`;
-  const statesRes = await fetch(statesUrl, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json;charset=utf-8',
-      'Accept-Encoding': 'gzip',
-    },
-  });
-  const statesText = await statesRes.text();
-  if (!statesRes.ok) {
-    const err = new Error(
-      `MoySklad states ${statesRes.status}: ${statesText.slice(0, 300)}`
-    );
-    err.code = 'MS_HTTP';
-    err.status = statesRes.status;
-    throw err;
+  try {
+    const expanded = await moyskladGetJson(`${metaUrl}?expand=states`);
+    const fromExpand = normalizeStatesPayload(expanded.states);
+    if (fromExpand.length > 0) return fromExpand;
+  } catch (err) {
+    console.warn('[moysklad] metadata?expand=states failed', err.message);
   }
-  const data = JSON.parse(statesText);
-  return data.rows || [];
+
+  const err = new Error(
+    'MoySklad: не удалось получить список статусов заказа (metadata.states).'
+  );
+  err.code = 'MS_STATES_UNAVAILABLE';
+  throw err;
 }
 
 async function updateCustomerOrderState(orderId, targetStateName) {

@@ -21,11 +21,32 @@ function resolveProjectId(): string | undefined {
   return undefined;
 }
 
-function isExpoGoRuntime(): boolean {
+export function isExpoGoRuntime(): boolean {
   // SDK 54: в Expo Go remote push через expo-notifications недоступен.
   const byExecutionEnv = Constants.executionEnvironment === 'storeClient';
   const byOwnership = Constants.appOwnership === 'expo';
   return Boolean(byExecutionEnv || byOwnership);
+}
+
+/** Каналы Android: вызывать при старте приложения, до прихода push. */
+export async function ensureNotificationChannels(): Promise<void> {
+  if (isExpoGoRuntime()) return;
+
+  await Notifications.setNotificationChannelAsync('default', {
+    name: 'Заказы в сборке',
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#1A5FB4',
+    sound: 'default',
+  });
+
+  await Notifications.setNotificationChannelAsync('urgent', {
+    name: 'Срочно: заказ не взят',
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 400, 200, 400, 200, 400],
+    lightColor: '#FF0000',
+    sound: 'default',
+  });
 }
 
 export async function registerExpoPushToken(): Promise<string | null> {
@@ -47,12 +68,7 @@ export async function registerExpoPushToken(): Promise<string | null> {
     return null;
   }
 
-  await Notifications.setNotificationChannelAsync('default', {
-    name: 'default',
-    importance: Notifications.AndroidImportance.DEFAULT,
-    vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#1A5FB4',
-  });
+  await ensureNotificationChannels();
 
   const projectId = resolveProjectId();
   const tokenResult = projectId

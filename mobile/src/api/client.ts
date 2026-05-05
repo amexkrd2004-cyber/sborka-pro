@@ -43,6 +43,7 @@ export async function loginRequest(login: string, password: string): Promise<Log
     method: 'POST',
     headers: JSON_HEADERS,
     body: JSON.stringify({ login, password }),
+    cache: 'no-store',
   });
   const body = (await parseBody(res)) as LoginResponse & { error?: string };
   if (!res.ok) {
@@ -62,6 +63,7 @@ export async function fetchOrders(token: string): Promise<OrdersListResponse> {
   const base = getApiBase();
   const res = await fetch(`${base}/orders`, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
   });
   const body = (await parseBody(res)) as OrdersListResponse & { error?: string };
   if (!res.ok) {
@@ -78,6 +80,7 @@ export async function fetchOrder(token: string, id: string): Promise<OrderDetail
   const base = getApiBase();
   const res = await fetch(`${base}/orders/${encodeURIComponent(id)}`, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
   });
   const body = (await parseBody(res)) as OrderDetailResponse & { error?: string };
   if (!res.ok) {
@@ -95,6 +98,7 @@ export async function claimOrder(token: string, id: string): Promise<ClaimRespon
   const res = await fetch(`${base}/orders/${encodeURIComponent(id)}/claim`, {
     method: 'POST',
     headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
   });
   const body = (await parseBody(res)) as ClaimResponse & { error?: string };
   if (!res.ok && res.status !== 409) {
@@ -117,6 +121,7 @@ export async function patchOrderStatus(
     method: 'PATCH',
     headers: { ...JSON_HEADERS, Authorization: `Bearer ${token}` },
     body: JSON.stringify({ targetStatus }),
+    cache: 'no-store',
   });
   const body = (await parseBody(res)) as PatchStatusResponse & { error?: string; message?: string };
   if (!res.ok) {
@@ -142,6 +147,7 @@ export async function registerPushToken(token: string, expoPushToken: string): P
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ expoPushToken }),
+    cache: 'no-store',
   });
   const body = (await parseBody(res)) as { error?: string; message?: string };
   if (!res.ok) {

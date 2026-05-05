@@ -1,6 +1,8 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
+  type AppStateStatus,
   FlatList,
   Pressable,
   RefreshControl,
@@ -27,23 +29,46 @@ export default function OrdersScreen({ onSelectOrder }: Props) {
   const load = useCallback(async () => {
     if (!token) return;
     setError(null);
-    try {
-      const data = await fetchOrders(token);
-      setOrders(data.orders ?? []);
-    } catch (e) {
-      const msg = e instanceof ApiError ? e.message : 'Не удалось загрузить заказы';
+    const maxAttempts = 3;
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      try {
+        const data = await fetchOrders(token);
+        setOrders(data.orders ?? []);
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (attempt < maxAttempts - 1) {
+          await new Promise((r) => setTimeout(r, 350 * (attempt + 1)));
+        }
+      }
+    }
+    if (lastErr != null) {
+      const msg =
+        lastErr instanceof ApiError ? lastErr.message : 'Не удалось загрузить заказы';
       setError(msg);
       setOrders([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
     }
+    setLoading(false);
+    setRefreshing(false);
   }, [token]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setLoading(true);
     load();
   }, [load]);
+
+  useEffect(() => {
+    let appState: AppStateStatus = AppState.currentState;
+    const sub = AppState.addEventListener('change', (next) => {
+      if (appState.match(/inactive|background/) && next === 'active' && token) {
+        load();
+      }
+      appState = next;
+    });
+    return () => sub.remove();
+  }, [token, load]);
 
   function onRefresh() {
     setRefreshing(true);

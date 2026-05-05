@@ -18,13 +18,20 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.amex_sborka.sborkapromobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "dbeb9106-56c9-4e42-b15b-67fb71d18fdb"
+      }
+    },
+    "owner": "amex_sborka"
   }
 }
