@@ -6,6 +6,11 @@
  */
 
 const ROOT_MINOR_FIELDS = ['sum', 'payedSum', 'shippedSum'];
+const ATTR_NAMES = {
+  deliveryType: 'Тип доставки',
+  pickerNote: 'Примечание для сборщика',
+  shipmentNumber: 'Номер отправления',
+};
 
 function minorToMajor(value) {
   if (value == null) return value;
@@ -19,6 +24,16 @@ function summarizeOrderSum(sumRaw) {
   return minorToMajor(sumRaw);
 }
 
+function readAttrByName(order, attrName) {
+  const attrs = Array.isArray(order?.attributes) ? order.attributes : [];
+  const hit = attrs.find((a) => String(a?.name || '').trim() === attrName);
+  if (!hit || hit.value == null) return null;
+  const v = hit.value;
+  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (typeof v === 'object' && typeof v.name === 'string') return v.name;
+  return null;
+}
+
 /** Полная карточка GET /orders/:id — приводим корневые денежные поля к рублям для клиентов. */
 function normalizeCustomerOrder(order) {
   if (!order || typeof order !== 'object') return order;
@@ -28,6 +43,11 @@ function normalizeCustomerOrder(order) {
       out[key] = minorToMajor(out[key]);
     }
   }
+  out.customFields = {
+    deliveryType: readAttrByName(order, ATTR_NAMES.deliveryType),
+    pickerNote: readAttrByName(order, ATTR_NAMES.pickerNote),
+    shipmentNumber: readAttrByName(order, ATTR_NAMES.shipmentNumber),
+  };
   return out;
 }
 

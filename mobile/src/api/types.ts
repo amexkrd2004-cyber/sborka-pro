@@ -23,9 +23,29 @@ export type OrdersListResponse = {
 };
 
 export type OrderDetailResponse = {
-  order: Record<string, unknown>;
+  order: {
+    id?: string;
+    name?: string;
+    moment?: string;
+    sum?: number;
+    state?: { name?: string };
+    stateName?: string;
+    customFields?: {
+      deliveryType?: string | null;
+      pickerNote?: string | null;
+      shipmentNumber?: string | null;
+    };
+    [key: string]: unknown;
+  };
 };
 
 export type ClaimResponse =
   | { claimed: true; already?: boolean; claimedAt?: string; moyskladOrderId?: string }
   | { claimed: false; takenBy?: { login: string; at: string } };
+
+export type PatchStatusResponse = {
+  ok: true;
+  currentStatus: string | null;
+  targetStatus: string;
+  order: OrderDetailResponse['order'];
+};

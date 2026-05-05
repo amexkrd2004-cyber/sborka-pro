@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ApiError, claimOrder, fetchOrder } from '../api/client';
+import { ApiError, claimOrder, fetchOrder, patchOrderStatus } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { formatRubles } from '../lib/formatMoney';
 
@@ -33,6 +33,7 @@ export default function OrderDetailScreen({ orderId: id, onGoBack }: Props) {
   const [order, setOrder] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [claimBusy, setClaimBusy] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +67,12 @@ export default function OrderDetailScreen({ orderId: id, onGoBack }: Props) {
       const res = await claimOrder(token, id);
       if ('claimed' in res && res.claimed) {
         setMessage(res.already ? 'Заказ уже у вас в работе.' : 'Заказ закреплён за вами.');
+        try {
+          const patched = await patchOrderStatus(token, id, 'Сборка (в работе)');
+          setOrder((patched.order as Record<string, unknown>) ?? order);
+        } catch (_) {
+          // Статус может быть уже не «Сборка» — оставляем мягкую деградацию.
+        }
       } else if ('takenBy' in res && res.takenBy) {
         setMessage(`Уже взял: ${res.takenBy.login}`);
       }
@@ -74,6 +81,23 @@ export default function OrderDetailScreen({ orderId: id, onGoBack }: Props) {
       setError(msg);
     } finally {
       setClaimBusy(false);
+    }
+  }
+
+  async function onChangeStatus(targetStatus: string) {
+    if (!token) return;
+    setStatusBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await patchOrderStatus(token, id, targetStatus);
+      setOrder((res.order as Record<string, unknown>) ?? order);
+      setMessage(`Статус обновлён: ${res.targetStatus}`);
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : 'Ошибка смены статуса';
+      setError(msg);
+    } finally {
+      setStatusBusy(false);
     }
   }
 
@@ -102,6 +126,11 @@ export default function OrderDetailScreen({ orderId: id, onGoBack }: Props) {
   const state = order.state as Record<string, unknown> | undefined;
   const stateName =
     state && typeof state.name === 'string' ? state.name : pickString(order, 'stateName');
+  const customFields = (order.customFields as Record<string, unknown> | undefined) || undefined;
+  const deliveryType = customFields && typeof customFields.deliveryType === 'string' ? customFields.deliveryType : null;
+  const pickerNote = customFields && typeof customFields.pickerNote === 'string' ? customFields.pickerNote : null;
+  const shipmentNumber =
+    customFields && typeof customFields.shipmentNumber === 'string' ? customFields.shipmentNumber : null;
 
   return (
     <View style={styles.wrap}>
@@ -115,14 +144,17 @@ export default function OrderDetailScreen({ orderId: id, onGoBack }: Props) {
         {moment ? <Text style={styles.meta}>{moment}</Text> : null}
         {sum != null ? <Text style={styles.meta}>Сумма: {formatRubles(sum)} ₽</Text> : null}
         {stateName ? <Text style={styles.meta}>Статус: {stateName}</Text> : null}
+        {deliveryType ? <Text style={styles.meta}>Тип доставки: {deliveryType}</Text> : null}
+        {shipmentNumber ? <Text style={styles.meta}>Номер отправления: {shipmentNumber}</Text> : null}
+        {pickerNote ? <Text style={styles.note}>Примечание: {pickerNote}</Text> : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {message ? <Text style={styles.info}>{message}</Text> : null}
 
         <Pressable
-          style={[styles.primaryBtn, claimBusy && styles.btnDisabled]}
+          style={[styles.primaryBtn, (claimBusy || statusBusy) && styles.btnDisabled]}
           onPress={onClaim}
-          disabled={claimBusy}
+          disabled={claimBusy || statusBusy}
         >
           {claimBusy ? (
             <ActivityIndicator color="#fff" />
@@ -131,10 +163,36 @@ export default function OrderDetailScreen({ orderId: id, onGoBack }: Props) {
           )}
         </Pressable>
 
-        <Text style={styles.hint}>
-          Смена статусов в МойСклад из приложения будет после согласования названий статусов и
-          доработки API на сервере.
-        </Text>
+        <View style={styles.statusGroup}>
+          <Text style={styles.statusTitle}>Смена статуса</Text>
+          <View style={styles.statusRow}>
+            <Pressable
+              style={[styles.secondaryActionBtn, statusBusy && styles.btnDisabled]}
+              onPress={() => onChangeStatus('Собран')}
+              disabled={statusBusy || claimBusy}
+            >
+              <Text style={styles.secondaryActionBtnText}>Собран</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.secondaryActionBtn, statusBusy && styles.btnDisabled]}
+              onPress={() => onChangeStatus('Отгружен')}
+              disabled={statusBusy || claimBusy}
+            >
+              <Text style={styles.secondaryActionBtnText}>Отгружен</Text>
+            </Pressable>
+          </View>
+          <Pressable
+            style={[styles.warnBtn, statusBusy && styles.btnDisabled]}
+            onPress={() => onChangeStatus('Проблема со сборкой')}
+            disabled={statusBusy || claimBusy}
+          >
+            {statusBusy ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.warnBtnText}>Проблема со сборкой</Text>
+            )}
+          </Pressable>
+        </View>
       </ScrollView>
     </View>
   );
@@ -162,6 +220,14 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 22, fontWeight: '700', color: '#1a2b45' },
   meta: { marginTop: 8, fontSize: 15, color: '#5a6b7d' },
+  note: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#1f334d',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 10,
+  },
   primaryBtn: {
     marginTop: 24,
     backgroundColor: '#1a5fb4',
@@ -179,11 +245,24 @@ const styles = StyleSheet.create({
   secondaryBtnText: { color: '#1a5fb4', fontSize: 16, fontWeight: '600' },
   error: { marginTop: 12, color: '#c01c28', fontSize: 14 },
   info: { marginTop: 12, color: '#1a6b2e', fontSize: 14 },
-  errText: { color: '#5a6b7d', textAlign: 'center', marginBottom: 16 },
-  hint: {
-    marginTop: 24,
-    fontSize: 13,
-    color: '#6a7d90',
-    lineHeight: 18,
+  statusGroup: { marginTop: 24 },
+  statusTitle: { fontSize: 15, fontWeight: '700', color: '#1a2b45', marginBottom: 10 },
+  statusRow: { flexDirection: 'row', gap: 10 },
+  secondaryActionBtn: {
+    flex: 1,
+    backgroundColor: '#2e7ecb',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
   },
+  secondaryActionBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  warnBtn: {
+    marginTop: 10,
+    backgroundColor: '#a82a2a',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  warnBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  errText: { color: '#5a6b7d', textAlign: 'center', marginBottom: 16 },
 });

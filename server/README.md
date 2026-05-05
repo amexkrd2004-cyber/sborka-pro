@@ -42,7 +42,7 @@ npm run dev
 | GET | `/orders` | Список заказов в статусе **MOYSKLAD_ASSEMBLY_STATE_NAME** (Bearer) |
 | GET | `/orders/:id` | Заказ по UUID МойСклад (Bearer) |
 | POST | `/orders/:id/claim` | Атомарный захват заказа (Bearer) |
-| PATCH | `/orders/:id/status` | Пока **501** — обновление статуса в МойСклад (следующий шаг) |
+| PATCH | `/orders/:id/status` | Смена статуса в МойСклад по согласованным переходам (`targetStatus`) |
 
 ## МойСклад: вебхук
 

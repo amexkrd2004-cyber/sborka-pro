@@ -3,7 +3,12 @@
 const express = require('express');
 const { requireAuth } = require('../middleware/requireAuth');
 const { requireDb } = require('../middleware/requireDb');
-const { listCustomerOrdersForAssembly, getCustomerOrderById } = require('../services/moyskladOrders');
+const {
+  listCustomerOrdersForAssembly,
+  getCustomerOrderById,
+  getCustomerOrderStateName,
+  updateCustomerOrderState,
+} = require('../services/moyskladOrders');
 const { normalizeCustomerOrder, summarizeOrderSum } = require('../lib/moyskladMoney');
 const { getPool } = require('../db');
 
@@ -11,6 +16,12 @@ const router = express.Router();
 
 /** МойСклад отдаёт UUID не всегда в «каноническом» виде RFC (4-й блок может начинаться не с 8/9/a/b). */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const STATUS_TRANSITIONS = {
+  Сборка: ['Сборка (в работе)', 'Проблема со сборкой'],
+  'Сборка (в работе)': ['Собран', 'Проблема со сборкой'],
+  Собран: ['Отгружен', 'Проблема со сборкой'],
+  'Проблема со сборкой': ['Сборка (в работе)'],
+};
 
 router.use(requireAuth);
 router.use(requireDb);
@@ -40,15 +51,56 @@ router.get('/', async (req, res) => {
   }
 });
 
-/** Смена статуса в МойСклад — следующий подэтап фазы B. */
-router.patch('/:id/status', (req, res) => {
+/** Смена статуса в МойСклад под согласованные переходы. */
+router.patch('/:id/status', express.json(), async (req, res) => {
   if (!UUID_RE.test(req.params.id)) {
     return res.status(400).json({ error: 'bad_request', message: 'id должен быть UUID заказа МойСклад.' });
   }
-  res.status(501).json({
-    error: 'not_implemented',
-    message: 'PATCH статуса заказа в МойСклад будет в следующем коммите фазы B.',
-  });
+  const targetStatus = typeof req.body?.targetStatus === 'string' ? req.body.targetStatus.trim() : '';
+  if (!targetStatus) {
+    return res
+      .status(400)
+      .json({ error: 'bad_request', message: 'Нужно поле targetStatus (строка).' });
+  }
+
+  try {
+    const id = req.params.id;
+    const currentOrder = await getCustomerOrderById(id);
+    if (!currentOrder) return res.status(404).json({ error: 'not_found' });
+    const currentStatus = await getCustomerOrderStateName(currentOrder);
+    const allowed = STATUS_TRANSITIONS[currentStatus] || [];
+    if (!allowed.includes(targetStatus)) {
+      return res.status(409).json({
+        error: 'invalid_transition',
+        currentStatus,
+        targetStatus,
+        allowedTransitions: allowed,
+      });
+    }
+    const updated = await updateCustomerOrderState(id, targetStatus);
+
+    await getPool().query(
+      `INSERT INTO assembly_log (moysklad_order_id, user_id, event_type, payload)
+       VALUES ($1::uuid, $2::uuid, 'status_changed', $3::jsonb)`,
+      [id.toLowerCase(), req.user.id, JSON.stringify({ from: currentStatus, to: targetStatus, source: 'api' })]
+    );
+
+    return res.json({
+      ok: true,
+      currentStatus,
+      targetStatus,
+      order: normalizeCustomerOrder(updated),
+    });
+  } catch (err) {
+    if (err.code === 'MS_NO_TOKEN') {
+      return res.status(503).json({ error: 'moysklad_not_configured', message: err.message });
+    }
+    if (err.code === 'MS_STATE_NOT_FOUND') {
+      return res.status(400).json({ error: 'bad_request', message: err.message });
+    }
+    console.error('[orders] patch status failed', err.message);
+    return res.status(502).json({ error: 'moysklad_error', message: err.message });
+  }
 });
 
 /** Атомарный захват заказа: кто первый INSERT — тот взял в сборку. */

@@ -1,4 +1,10 @@
-import type { ClaimResponse, LoginResponse, OrderDetailResponse, OrdersListResponse } from './types';
+import type {
+  ClaimResponse,
+  LoginResponse,
+  OrderDetailResponse,
+  OrdersListResponse,
+  PatchStatusResponse,
+} from './types';
 import { getApiBase } from '../config';
 
 const JSON_HEADERS = {
@@ -99,4 +105,30 @@ export async function claimOrder(token: string, id: string): Promise<ClaimRespon
     );
   }
   return body as ClaimResponse;
+}
+
+export async function patchOrderStatus(
+  token: string,
+  id: string,
+  targetStatus: string
+): Promise<PatchStatusResponse> {
+  const base = getApiBase();
+  const res = await fetch(`${base}/orders/${encodeURIComponent(id)}/status`, {
+    method: 'PATCH',
+    headers: { ...JSON_HEADERS, Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ targetStatus }),
+  });
+  const body = (await parseBody(res)) as PatchStatusResponse & { error?: string; message?: string };
+  if (!res.ok) {
+    throw new ApiError(
+      typeof body.message === 'string'
+        ? body.message
+        : typeof body.error === 'string'
+          ? body.error
+          : `HTTP ${res.status}`,
+      res.status,
+      body
+    );
+  }
+  return body;
 }
