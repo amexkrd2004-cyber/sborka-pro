@@ -1,6 +1,6 @@
 'use strict';
 
-const { getToken, getAssemblyStateName, DEFAULT_BASE, fetchEntityByHref } = require('./moyskladApi');
+const { getToken, getAssemblyStateName, DEFAULT_BASE } = require('./moyskladApi');
 
 /**
  * Список заказов покупателя в статусе сборки (имя статуса = MOYSKLAD_ASSEMBLY_STATE_NAME).
@@ -75,13 +75,20 @@ async function getCustomerOrderById(orderId) {
   return JSON.parse(text);
 }
 
+function getStateNameByHref(states, href) {
+  const normalizedHref = String(href || '').trim();
+  if (!normalizedHref) return null;
+  const hit = (states || []).find((s) => String(s?.meta?.href || '').trim() === normalizedHref);
+  return hit && typeof hit.name === 'string' ? hit.name.trim() : null;
+}
+
 async function getCustomerOrderStateName(order) {
   const direct = order?.state?.name;
   if (typeof direct === 'string' && direct.trim()) return direct.trim();
   const href = order?.state?.meta?.href;
   if (!href) return null;
-  const state = await fetchEntityByHref(href);
-  return typeof state?.name === 'string' ? state.name.trim() : null;
+  const states = await getCustomerOrderStatesMetadata();
+  return getStateNameByHref(states, href);
 }
 
 async function getCustomerOrderStatesMetadata() {
@@ -91,8 +98,8 @@ async function getCustomerOrderStatesMetadata() {
     e.code = 'MS_NO_TOKEN';
     throw e;
   }
-  const url = `${DEFAULT_BASE}/entity/customerorder/metadata/states`;
-  const res = await fetch(url, {
+  const metaUrl = `${DEFAULT_BASE}/entity/customerorder/metadata`;
+  const metaRes = await fetch(metaUrl, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -100,14 +107,34 @@ async function getCustomerOrderStatesMetadata() {
       'Accept-Encoding': 'gzip',
     },
   });
-  const text = await res.text();
-  if (!res.ok) {
-    const err = new Error(`MoySklad states ${res.status}: ${text.slice(0, 300)}`);
+  const metaText = await metaRes.text();
+  if (metaRes.ok) {
+    const metaData = JSON.parse(metaText);
+    if (Array.isArray(metaData.states)) {
+      return metaData.states;
+    }
+  }
+
+  // Fallback для окружений, где список статусов отдается отдельным ресурсом.
+  const statesUrl = `${DEFAULT_BASE}/entity/customerorder/metadata/states`;
+  const statesRes = await fetch(statesUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json;charset=utf-8',
+      'Accept-Encoding': 'gzip',
+    },
+  });
+  const statesText = await statesRes.text();
+  if (!statesRes.ok) {
+    const err = new Error(
+      `MoySklad states ${statesRes.status}: ${statesText.slice(0, 300)}`
+    );
     err.code = 'MS_HTTP';
-    err.status = res.status;
+    err.status = statesRes.status;
     throw err;
   }
-  const data = JSON.parse(text);
+  const data = JSON.parse(statesText);
   return data.rows || [];
 }
 
