@@ -78,6 +78,8 @@ router.patch('/:id/status', express.json(), async (req, res) => {
       });
     }
     const updated = await updateCustomerOrderState(id, targetStatus);
+    const normalized = normalizeCustomerOrder(updated);
+    normalized.stateName = targetStatus;
 
     await getPool().query(
       `INSERT INTO assembly_log (moysklad_order_id, user_id, event_type, payload)
@@ -89,7 +91,7 @@ router.patch('/:id/status', express.json(), async (req, res) => {
       ok: true,
       currentStatus,
       targetStatus,
-      order: normalizeCustomerOrder(updated),
+      order: normalized,
     });
   } catch (err) {
     if (err.code === 'MS_NO_TOKEN') {
@@ -165,7 +167,10 @@ router.get('/:id', async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: 'not_found' });
     }
-    res.json({ order: normalizeCustomerOrder(order) });
+    const normalized = normalizeCustomerOrder(order);
+    const stateName = await getCustomerOrderStateName(order);
+    if (stateName) normalized.stateName = stateName;
+    res.json({ order: normalized });
   } catch (err) {
     if (err.code === 'MS_NO_TOKEN') {
       return res.status(503).json({ error: 'moysklad_not_configured', message: err.message });

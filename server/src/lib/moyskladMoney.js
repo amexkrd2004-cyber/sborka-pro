@@ -7,7 +7,7 @@
 
 const ROOT_MINOR_FIELDS = ['sum', 'payedSum', 'shippedSum'];
 const ATTR_NAMES = {
-  deliveryType: 'Тип доставки',
+  deliveryType: ['Тип доставки', 'Тип Доставки'],
   pickerNote: 'Примечание для сборщика',
   shipmentNumber: 'Номер отправления',
 };
@@ -24,9 +24,14 @@ function summarizeOrderSum(sumRaw) {
   return minorToMajor(sumRaw);
 }
 
+function normalizeName(v) {
+  return String(v || '').trim().toLowerCase();
+}
+
 function readAttrByName(order, attrName) {
   const attrs = Array.isArray(order?.attributes) ? order.attributes : [];
-  const hit = attrs.find((a) => String(a?.name || '').trim() === attrName);
+  const accepted = (Array.isArray(attrName) ? attrName : [attrName]).map(normalizeName);
+  const hit = attrs.find((a) => accepted.includes(normalizeName(a?.name)));
   if (!hit || hit.value == null) return null;
   const v = hit.value;
   if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);

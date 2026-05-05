@@ -126,7 +126,7 @@ export default function OrderDetailScreen({ orderId: id, onGoBack }: Props) {
   const state = order.state as Record<string, unknown> | undefined;
   const stateName =
     state && typeof state.name === 'string' ? state.name : pickString(order, 'stateName');
-  const canClaim = stateName === 'Сборка' || stateName == null;
+  const canClaim = stateName === 'Сборка';
   const customFields = (order.customFields as Record<string, unknown> | undefined) || undefined;
   const deliveryType = customFields && typeof customFields.deliveryType === 'string' ? customFields.deliveryType : null;
   const pickerNote = customFields && typeof customFields.pickerNote === 'string' ? customFields.pickerNote : null;
