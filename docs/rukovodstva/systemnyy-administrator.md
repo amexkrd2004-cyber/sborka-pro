@@ -184,10 +184,14 @@ npm run dev
 cd mobile
 npm ci
 npx eas login
-npx eas build --platform android --profile production
+npx eas project:init
+npx eas build --platform android --profile development
 ```
 
-Точные профили — в `eas.json` репозитория.
+В проекте есть базовый `mobile/eas.json` с профилями `development`, `preview`, `production`.
+
+> Важно: push-уведомления через `expo-notifications` на Android в **Expo Go** не работают.  
+> Проверять push только в development build / APK.
 
 ### 9.3. Распространение APK
 

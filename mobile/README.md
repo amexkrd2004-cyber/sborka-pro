@@ -167,3 +167,49 @@ npm.cmd run android
 ## Учётные данные
 
 Те же, что для **`POST /auth/login`** на вашем сервере (логин и пароль пользователя в PostgreSQL, не переменные Railway `SEED_*`, если вы их уже удалили).
+
+---
+
+## Push в реальности (EAS build, не Expo Go)
+
+Для remote push нужен **development build / APK**. В Expo Go push на Android не тестируется.
+
+### Шаг 1. Первый запуск EAS в проекте
+
+В папке `mobile`:
+
+```powershell
+npx.cmd eas --version
+npx.cmd eas login
+npx.cmd eas project:init
+```
+
+При `eas project:init` подтвердите привязку к текущему проекту Expo.  
+После этого `projectId` появится в конфиге Expo автоматически (или через `app.config.*` / dashboard).
+
+### Шаг 2. Собрать Android development build
+
+```powershell
+npx.cmd eas build --platform android --profile development
+```
+
+Профили уже добавлены в `mobile/eas.json`.
+
+Когда сборка завершится, установите APK/ссылку на телефон.
+
+### Шаг 3. Запустить приложение в development build
+
+- Откройте установленный development build на телефоне.
+- Подключите его к Metro (`npx.cmd expo start -c`) или откройте уже вшитый JS bundle.
+- Войдите в приложение.
+- Разрешите уведомления (Android prompt).
+
+### Шаг 4. Проверить push end-to-end
+
+1. Убедитесь, что телефон залогинен в приложении (токен регистрируется автоматически через `/auth/register-token`).
+2. В МойСклад переведите тестовый заказ в статус `Сборка`.
+3. Подождите webhook: сервер должен отправить push.
+4. Если push не пришёл:
+   - проверьте логи Railway по строкам `[moysklad-worker] push sent` / `no push tokens registered`;
+   - убедитесь, что это именно development build (не Expo Go);
+   - перезайдите в приложение и повторите.

@@ -212,6 +212,7 @@
 | 2026-05-05 | Зафиксирована **пауза** перед **`PATCH /orders/:id/status`** и кнопками статусов: согласование в МойСклад (имена статусов, «в работе», поля ШК). Обновлены **`sborka.md`** (чеклист после паузы), **`docs/moysklad-integration.md`** §9, памятка раздела 8. |
 | 2026-05-05 | **Пауза закрыта:** получены финальные статусы (`Новый`, `Подтвержден`, `Сборка`, `Сборка (в работе)`, `Собран`, `Проблема со сборкой`, `Отгружен`) и поля (`Тип доставки`, `Номер отправления`, `Примечание для сборщика`; `Транспортная компания` удаляется из проекта). Следующий этап — `PATCH /orders/:id/status` + кнопки в mobile. |
 | 2026-05-05 | **Push MVP:** в `server/src/services/moyskladWebhookWorker.js` добавлена отправка Expo push при `assemblyMatch=true`; новый сервис `server/src/services/expoPush.js`. В mobile после входа запрашивается разрешение и токен (`expo-notifications`, `expo-device`, `expo-constants`), затем вызов `POST /auth/register-token`. |
+| 2026-05-05 | Для теста push добавлен `mobile/eas.json`; обновлены инструкции `mobile/README.md` и `docs/rukovodstva/systemnyy-administrator.md`: проверка push только в **development build**, не в Expo Go. |
 
 ---
 
