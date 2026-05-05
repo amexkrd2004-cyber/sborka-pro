@@ -21,8 +21,19 @@ function resolveProjectId(): string | undefined {
   return undefined;
 }
 
+function isExpoGoRuntime(): boolean {
+  // SDK 54: в Expo Go remote push через expo-notifications недоступен.
+  const byExecutionEnv = Constants.executionEnvironment === 'storeClient';
+  const byOwnership = Constants.appOwnership === 'expo';
+  return Boolean(byExecutionEnv || byOwnership);
+}
+
 export async function registerExpoPushToken(): Promise<string | null> {
   if (!Device.isDevice) {
+    return null;
+  }
+  if (isExpoGoRuntime()) {
+    console.log('[push] Expo Go detected: remote push registration skipped');
     return null;
   }
 

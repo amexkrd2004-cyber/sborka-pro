@@ -160,6 +160,7 @@ npm.cmd run android
 | `npm` не находится | Перезапустите терминал после установки Node; проверьте `node -v` и `npm -v`. |
 | Ошибка входа `invalid_credentials` | Логин должен совпадать с пользователем в БД (не обязательно `admin` — см. сид `SEED_ADMIN_LOGIN` в документации Railway). |
 | Красные ошибки в Metro | Остановите (Ctrl+C), снова **`npx expo start -c`**. |
+| Ошибка про `expo-notifications` и Expo Go («Android Push notifications ... removed from Expo Go») | Это ожидаемо: remote push в Expo Go не поддерживается. Для push нужен **development build / APK**. В текущем проекте ошибка в Expo Go подавлена, регистрация токена просто пропускается. |
 
 ---
 
