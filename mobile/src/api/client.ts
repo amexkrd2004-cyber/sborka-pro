@@ -132,3 +132,27 @@ export async function patchOrderStatus(
   }
   return body;
 }
+
+export async function registerPushToken(token: string, expoPushToken: string): Promise<void> {
+  const base = getApiBase();
+  const res = await fetch(`${base}/auth/register-token`, {
+    method: 'POST',
+    headers: {
+      ...JSON_HEADERS,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ expoPushToken }),
+  });
+  const body = (await parseBody(res)) as { error?: string; message?: string };
+  if (!res.ok) {
+    throw new ApiError(
+      typeof body.message === 'string'
+        ? body.message
+        : typeof body.error === 'string'
+          ? body.error
+          : `HTTP ${res.status}`,
+      res.status,
+      body
+    );
+  }
+}

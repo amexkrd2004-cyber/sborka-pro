@@ -1,4 +1,6 @@
 const { fetchEntityByHref, getToken, getAssemblyStateName } = require('./moyskladApi');
+const { getPool } = require('../db');
+const { sendExpoPushBatch } = require('./expoPush');
 
 /**
  * В ответе GET заказа `state.name` часто отсутствует — только `state.meta.href` на справочник статусов.
@@ -74,8 +76,53 @@ async function processMoyskladWebhookBody(body, requestId) {
       });
 
       if (match) {
-        // Фаза B: enqueue notification, write DB, push Expo
-        console.log('[moysklad-worker] TODO phase B: notify assemblers for order', orderName);
+        const pool = getPool();
+        await pool.query(
+          `INSERT INTO assembly_log (moysklad_order_id, event_type, payload)
+           VALUES ($1::uuid, 'assembly_match', $2::jsonb)`,
+          [
+            String(order.id).toLowerCase(),
+            JSON.stringify({ requestId, orderName, stateName, source: 'webhook' }),
+          ]
+        );
+
+        const tokensRes = await pool.query(
+          `SELECT expo_push_token
+           FROM push_tokens
+           WHERE expo_push_token IS NOT NULL
+             AND length(trim(expo_push_token)) > 0`
+        );
+        const pushTokens = tokensRes.rows.map((r) => String(r.expo_push_token || '').trim());
+        if (pushTokens.length === 0) {
+          console.log('[moysklad-worker] no push tokens registered');
+          continue;
+        }
+
+        const push = await sendExpoPushBatch(
+          pushTokens.map((to) => ({
+            to,
+            title: 'Новый заказ в сборке',
+            body: `Заказ ${orderName} ожидает сборки`,
+            data: { orderId: order.id, orderName, stateName },
+          }))
+        );
+        await pool.query(
+          `INSERT INTO assembly_log (moysklad_order_id, event_type, payload)
+           VALUES ($1::uuid, 'push_sent', $2::jsonb)`,
+          [
+            String(order.id).toLowerCase(),
+            JSON.stringify({
+              requestId,
+              sent: push.sent,
+              errors: push.errors.length,
+            }),
+          ]
+        );
+        console.log('[moysklad-worker] push sent', {
+          order: orderName,
+          recipients: push.sent,
+          errors: push.errors.length,
+        });
       }
     } catch (err) {
       console.error('[moysklad-worker] fetch order failed', { href, message: err.message });

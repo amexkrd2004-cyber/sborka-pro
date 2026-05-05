@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { loginRequest } from '../api/client';
+import { loginRequest, registerPushToken } from '../api/client';
+import { registerExpoPushToken } from '../services/pushNotifications';
 
 const TOKEN_KEY = 'sborka_jwt';
 
@@ -16,6 +17,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+
+  const syncPushToken = useCallback(async (jwtToken: string) => {
+    try {
+      const expoToken = await registerExpoPushToken();
+      if (!expoToken) return;
+      await registerPushToken(jwtToken, expoToken);
+    } catch (err) {
+      console.log('[push] register token failed', err);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +46,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    syncPushToken(token);
+  }, [token, syncPushToken]);
 
   const login = useCallback(async (login: string, password: string) => {
     const res = await loginRequest(login, password);

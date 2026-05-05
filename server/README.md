@@ -38,7 +38,7 @@ npm run dev
 | POST | `/webhook/moysklad` | Вебхук МойСклад |
 | POST | `/auth/login` | Тело `{ "login", "password" }` → JWT |
 | GET | `/auth/me` | Текущий пользователь по `Authorization: Bearer` |
-| POST | `/auth/register-token` | Сохранить Expo push-токен: `{ "expoPushToken" }` |
+| POST | `/auth/register-token` | Сохранить Expo push-токен: `{ "expoPushToken" }` (мобилка отправляет автоматически после входа) |
 | GET | `/orders` | Список заказов в статусе **MOYSKLAD_ASSEMBLY_STATE_NAME** (Bearer) |
 | GET | `/orders/:id` | Заказ по UUID МойСклад (Bearer) |
 | POST | `/orders/:id/claim` | Атомарный захват заказа (Bearer) |
