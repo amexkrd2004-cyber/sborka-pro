@@ -86,24 +86,39 @@ async function processMoyskladWebhookBody(body, requestId) {
           ]
         );
 
+        const orderUuid = String(order.id).toLowerCase();
+        const escIns = await pool.query(
+          `INSERT INTO order_escalations (moysklad_order_id, fire_at, attempts, max_attempts, repeat_interval_sec)
+           VALUES ($1::uuid, now() + interval '10 minutes', 0, 4, 900)
+           ON CONFLICT (moysklad_order_id) DO NOTHING
+           RETURNING moysklad_order_id, fire_at`,
+          [orderUuid]
+        );
+        if (escIns.rowCount > 0) {
+          console.log('[moysklad-worker] escalation scheduled', {
+            order: orderName,
+            orderId: orderUuid,
+            fireAt: escIns.rows[0]?.fire_at,
+          });
+        } else {
+          console.log('[moysklad-worker] escalation already pending (timer not reset)', {
+            order: orderName,
+            orderId: orderUuid,
+          });
+        }
+
         const tokensRes = await pool.query(
           `SELECT expo_push_token
            FROM push_tokens
            WHERE expo_push_token IS NOT NULL
              AND length(trim(expo_push_token)) > 0`
         );
-        await pool.query(
-          `INSERT INTO order_escalations (moysklad_order_id, fire_at, attempts, max_attempts, repeat_interval_sec)
-           VALUES ($1::uuid, now() + interval '10 minutes', 0, 4, 900)
-           ON CONFLICT (moysklad_order_id) DO UPDATE
-             SET fire_at = EXCLUDED.fire_at,
-                 attempts = 0,
-                 max_attempts = EXCLUDED.max_attempts,
-                 repeat_interval_sec = EXCLUDED.repeat_interval_sec`,
-          [String(order.id).toLowerCase()]
-        );
-
         const pushTokens = tokensRes.rows.map((r) => String(r.expo_push_token || '').trim());
+
+        if (escIns.rowCount === 0) {
+          continue;
+        }
+
         if (pushTokens.length === 0) {
           console.log('[moysklad-worker] no push tokens registered');
           continue;
@@ -123,7 +138,7 @@ async function processMoyskladWebhookBody(body, requestId) {
           `INSERT INTO assembly_log (moysklad_order_id, event_type, payload)
            VALUES ($1::uuid, 'push_sent', $2::jsonb)`,
           [
-            String(order.id).toLowerCase(),
+            orderUuid,
             JSON.stringify({
               requestId,
               sent: push.sent,
