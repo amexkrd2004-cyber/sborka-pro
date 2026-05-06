@@ -51,6 +51,13 @@ router.get('/', async (req, res) => {
   }
 });
 
+/** Подтвердить alarm по всем текущим заказам в сборке: остановить все активные эскалации. */
+router.post('/escalations/ack-all', async (req, res) => {
+  const pool = getPool();
+  const del = await pool.query(`DELETE FROM order_escalations RETURNING moysklad_order_id`);
+  return res.json({ ok: true, stoppedCount: del.rowCount || 0 });
+});
+
 /** Смена статуса в МойСклад под согласованные переходы. */
 router.patch('/:id/status', express.json(), async (req, res) => {
   if (!UUID_RE.test(req.params.id)) {
@@ -160,6 +167,28 @@ router.post('/:id/claim', async (req, res) => {
     moyskladOrderId: ins.rows[0].moysklad_order_id,
     claimedAt: ins.rows[0].claimed_at,
   });
+});
+
+/** Подтверждение alarm-сигнала: останавливает дальнейшие эскалации по заказу. */
+router.post('/:id/escalation-ack', async (req, res) => {
+  const id = req.params.id;
+  if (!UUID_RE.test(id)) {
+    return res.status(400).json({ error: 'bad_request', message: 'id должен быть UUID заказа МойСклад.' });
+  }
+  const pool = getPool();
+  const orderId = id.toLowerCase();
+  const del = await pool.query(
+    `DELETE FROM order_escalations
+     WHERE moysklad_order_id = $1::uuid
+     RETURNING moysklad_order_id`,
+    [orderId]
+  );
+  await pool.query(
+    `INSERT INTO assembly_log (moysklad_order_id, user_id, event_type, payload)
+     VALUES ($1::uuid, $2::uuid, 'escalation_ack', $3::jsonb)`,
+    [orderId, req.user.id, JSON.stringify({ source: 'api' })]
+  );
+  return res.json({ ok: true, stopped: del.rowCount > 0 });
 });
 
 /** Карточка заказа по id МойСклад (UUID). */

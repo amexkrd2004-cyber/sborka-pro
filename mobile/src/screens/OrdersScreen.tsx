@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { ApiError, fetchOrders } from '../api/client';
+import { ackAllEscalations, ApiError, fetchOrders } from '../api/client';
 import type { OrderSummary } from '../api/types';
 import { useAuth } from '../context/AuthContext';
 import { formatRubles } from '../lib/formatMoney';
@@ -24,11 +24,14 @@ export default function OrdersScreen({ onSelectOrder }: Props) {
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [ackBusy, setAckBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
     setError(null);
+    setMessage(null);
     const maxAttempts = 3;
     let lastErr: unknown = null;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
@@ -75,6 +78,26 @@ export default function OrdersScreen({ onSelectOrder }: Props) {
     load();
   }
 
+  async function onAckAllSignals() {
+    if (!token) return;
+    setAckBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await ackAllEscalations(token);
+      setMessage(
+        res.stoppedCount > 0
+          ? `Сигнал подтверждён: остановлено тревог ${res.stoppedCount}.`
+          : 'Активных тревог сейчас нет.'
+      );
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : 'Не удалось отключить тревоги';
+      setError(msg);
+    } finally {
+      setAckBusy(false);
+    }
+  }
+
   function renderItem({ item }: { item: OrderSummary }) {
     return (
       <Pressable style={styles.row} onPress={() => onSelectOrder(item.id)}>
@@ -103,6 +126,20 @@ export default function OrdersScreen({ onSelectOrder }: Props) {
       </View>
 
       {error ? <Text style={styles.banner}>{error}</Text> : null}
+      {message ? <Text style={styles.infoBanner}>{message}</Text> : null}
+      <View style={styles.actions}>
+        <Pressable
+          style={[styles.alarmAckBtn, ackBusy && styles.btnDisabled]}
+          onPress={onAckAllSignals}
+          disabled={ackBusy}
+        >
+          {ackBusy ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.alarmAckBtnText}>Подтвердить сигнал</Text>
+          )}
+        </Pressable>
+      </View>
 
       <FlatList
         data={orders}
@@ -141,6 +178,27 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
   },
+  infoBanner: {
+    marginHorizontal: 12,
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#e4f5e6',
+    color: '#1a6b2e',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  actions: {
+    paddingHorizontal: 12,
+    paddingTop: 10,
+  },
+  alarmAckBtn: {
+    backgroundColor: '#7a4f00',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  alarmAckBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  btnDisabled: { opacity: 0.65 },
   row: {
     backgroundColor: '#fff',
     marginHorizontal: 12,

@@ -1,5 +1,7 @@
 import type {
   ClaimResponse,
+  EscalationAckResponse,
+  EscalationsAckAllResponse,
   LoginResponse,
   OrderDetailResponse,
   OrdersListResponse,
@@ -161,4 +163,51 @@ export async function registerPushToken(token: string, expoPushToken: string): P
       body
     );
   }
+}
+
+export async function ackEscalation(token: string, id: string): Promise<EscalationAckResponse> {
+  const base = getApiBase();
+  const res = await fetch(`${base}/orders/${encodeURIComponent(id)}/escalation-ack`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const body = (await parseBody(res)) as EscalationAckResponse & { error?: string; message?: string };
+  if (!res.ok) {
+    throw new ApiError(
+      typeof body.message === 'string'
+        ? body.message
+        : typeof body.error === 'string'
+          ? body.error
+          : `HTTP ${res.status}`,
+      res.status,
+      body
+    );
+  }
+  return body;
+}
+
+export async function ackAllEscalations(token: string): Promise<EscalationsAckAllResponse> {
+  const base = getApiBase();
+  const res = await fetch(`${base}/orders/escalations/ack-all`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const body = (await parseBody(res)) as EscalationsAckAllResponse & {
+    error?: string;
+    message?: string;
+  };
+  if (!res.ok) {
+    throw new ApiError(
+      typeof body.message === 'string'
+        ? body.message
+        : typeof body.error === 'string'
+          ? body.error
+          : `HTTP ${res.status}`,
+      res.status,
+      body
+    );
+  }
+  return body;
 }

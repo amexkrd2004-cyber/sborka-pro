@@ -20,7 +20,7 @@ async function processDueEscalations() {
   if (!pool) return;
 
   const { rows } = await pool.query(
-    `SELECT moysklad_order_id FROM order_escalations
+    `SELECT moysklad_order_id, attempts, max_attempts, repeat_interval_sec FROM order_escalations
      WHERE fire_at <= now()
      ORDER BY fire_at ASC
      LIMIT 30`
@@ -31,6 +31,9 @@ async function processDueEscalations() {
 
   for (const r of rows) {
     const orderId = r.moysklad_order_id;
+    const attempts = Number(r.attempts || 0);
+    const maxAttempts = Math.max(Number(r.max_attempts || 4), 1);
+    const repeatIntervalSec = Math.max(Number(r.repeat_interval_sec || 900), 60);
     try {
       const claimed = await pool.query(
         `SELECT 1 FROM assembly_claims WHERE moysklad_order_id = $1::uuid`,
@@ -81,17 +84,28 @@ async function processDueEscalations() {
           pushTokens.map((to) => ({
             to,
             title: 'Срочно: заказ не взят',
-            body: `${orderName} в «${targetState}» более 10 мин — возьмите в работу`,
-            data: { orderId, orderName, stateName, kind: 'escalation' },
+            body: `${orderName} не взят в работу. Подтвердите сигнал или возьмите заказ.`,
+            data: { orderId, orderName, stateName, kind: 'escalation_alarm' },
             channelId: 'urgent',
             priority: 'high',
           }))
         );
       }
 
-      await pool.query(`DELETE FROM order_escalations WHERE moysklad_order_id = $1::uuid`, [
-        orderId,
-      ]);
+      const nextAttempts = attempts + 1;
+      if (nextAttempts >= maxAttempts) {
+        await pool.query(`DELETE FROM order_escalations WHERE moysklad_order_id = $1::uuid`, [
+          orderId,
+        ]);
+      } else {
+        await pool.query(
+          `UPDATE order_escalations
+           SET attempts = $2::int,
+               fire_at = now() + ($3::int * interval '1 second')
+           WHERE moysklad_order_id = $1::uuid`,
+          [orderId, nextAttempts, repeatIntervalSec]
+        );
+      }
     } catch (err) {
       console.error('[escalation] order', orderId, err.message);
     }

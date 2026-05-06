@@ -38,10 +38,20 @@ CREATE INDEX IF NOT EXISTS idx_assembly_log_order ON assembly_log (moysklad_orde
 CREATE TABLE IF NOT EXISTS order_escalations (
   moysklad_order_id UUID PRIMARY KEY,
   fire_at TIMESTAMPTZ NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  max_attempts INTEGER NOT NULL DEFAULT 4,
+  repeat_interval_sec INTEGER NOT NULL DEFAULT 900,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_order_escalations_fire ON order_escalations (fire_at);
+
+ALTER TABLE order_escalations
+  ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE order_escalations
+  ADD COLUMN IF NOT EXISTS max_attempts INTEGER NOT NULL DEFAULT 4;
+ALTER TABLE order_escalations
+  ADD COLUMN IF NOT EXISTS repeat_interval_sec INTEGER NOT NULL DEFAULT 900;
 
 CREATE TABLE IF NOT EXISTS order_refusals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

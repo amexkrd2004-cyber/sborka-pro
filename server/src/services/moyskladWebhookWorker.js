@@ -93,9 +93,13 @@ async function processMoyskladWebhookBody(body, requestId) {
              AND length(trim(expo_push_token)) > 0`
         );
         await pool.query(
-          `INSERT INTO order_escalations (moysklad_order_id, fire_at)
-           VALUES ($1::uuid, now() + interval '10 minutes')
-           ON CONFLICT (moysklad_order_id) DO UPDATE SET fire_at = EXCLUDED.fire_at`,
+          `INSERT INTO order_escalations (moysklad_order_id, fire_at, attempts, max_attempts, repeat_interval_sec)
+           VALUES ($1::uuid, now() + interval '10 minutes', 0, 4, 900)
+           ON CONFLICT (moysklad_order_id) DO UPDATE
+             SET fire_at = EXCLUDED.fire_at,
+                 attempts = 0,
+                 max_attempts = EXCLUDED.max_attempts,
+                 repeat_interval_sec = EXCLUDED.repeat_interval_sec`,
           [String(order.id).toLowerCase()]
         );
 

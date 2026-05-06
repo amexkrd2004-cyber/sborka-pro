@@ -101,6 +101,7 @@ export default function OrderDetailScreen({ orderId: id, onGoBack }: Props) {
     }
   }
 
+
   if (loading) {
     return (
       <View style={styles.centered}>

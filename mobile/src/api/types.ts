@@ -49,3 +49,13 @@ export type PatchStatusResponse = {
   targetStatus: string;
   order: OrderDetailResponse['order'];
 };
+
+export type EscalationAckResponse = {
+  ok: true;
+  stopped: boolean;
+};
+
+export type EscalationsAckAllResponse = {
+  ok: true;
+  stoppedCount: number;
+};
