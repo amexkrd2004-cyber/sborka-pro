@@ -80,16 +80,33 @@ async function processDueEscalations() {
       const pushTokens = tokensRes.rows.map((x) => String(x.expo_push_token || '').trim());
 
       if (pushTokens.length > 0) {
-        await sendExpoPushBatch(
+        const push = await sendExpoPushBatch(
           pushTokens.map((to) => ({
             to,
             title: 'Срочно: заказ не взят',
             body: `${orderName} не взят в работу. Подтвердите сигнал или возьмите заказ.`,
-            data: { orderId, orderName, stateName, kind: 'escalation_alarm' },
-            channelId: 'urgent',
+            data: {
+              orderId,
+              orderName,
+              stateName,
+              kind: 'escalation_alarm',
+              attempt: attempts + 1,
+              maxAttempts,
+            },
+            // На части устройств custom-канал может быть неинициализирован; default уже проверен в бою.
+            channelId: 'default',
             priority: 'high',
           }))
         );
+        console.log('[escalation] alarm push sent', {
+          order: orderName,
+          orderId,
+          attempt: attempts + 1,
+          maxAttempts,
+          recipients: push.sent,
+          errors: push.errors.length,
+          errorDetails: push.errors.slice(0, 3),
+        });
       }
 
       const nextAttempts = attempts + 1;
@@ -97,6 +114,10 @@ async function processDueEscalations() {
         await pool.query(`DELETE FROM order_escalations WHERE moysklad_order_id = $1::uuid`, [
           orderId,
         ]);
+        console.log('[escalation] alarm finished by max attempts', {
+          orderId,
+          attempts: nextAttempts,
+        });
       } else {
         await pool.query(
           `UPDATE order_escalations
@@ -105,6 +126,11 @@ async function processDueEscalations() {
            WHERE moysklad_order_id = $1::uuid`,
           [orderId, nextAttempts, repeatIntervalSec]
         );
+        console.log('[escalation] next alarm scheduled', {
+          orderId,
+          nextAttempt: nextAttempts + 1,
+          inSeconds: repeatIntervalSec,
+        });
       }
     } catch (err) {
       console.error('[escalation] order', orderId, err.message);
