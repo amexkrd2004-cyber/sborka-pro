@@ -124,13 +124,27 @@ async function processMoyskladWebhookBody(body, requestId) {
               requestId,
               sent: push.sent,
               errors: push.errors.length,
+              errorDetails: push.errors.slice(0, 5),
             }),
           ]
         );
+        const staleTokens = push.errors
+          .filter((e) => e?.details?.error === 'DeviceNotRegistered' && e?.to)
+          .map((e) => String(e.to).trim());
+        if (staleTokens.length > 0) {
+          await pool.query(
+            `DELETE FROM push_tokens WHERE expo_push_token = ANY($1::text[])`,
+            [staleTokens]
+          );
+          console.log('[moysklad-worker] removed stale push tokens', {
+            count: staleTokens.length,
+          });
+        }
         console.log('[moysklad-worker] push sent', {
           order: orderName,
           recipients: push.sent,
           errors: push.errors.length,
+          errorDetails: push.errors.slice(0, 3),
         });
       }
     } catch (err) {

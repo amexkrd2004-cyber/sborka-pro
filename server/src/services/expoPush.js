@@ -55,8 +55,17 @@ async function sendExpoPushBatch(messages) {
   }
 
   const data = Array.isArray(payload?.data) ? payload.data : [];
-  const errors = data.filter((d) => d?.status === 'error');
-  return { sent: clean.length, errors };
+  const errorReports = data
+    .map((ticket, idx) => {
+      if (ticket?.status !== 'error') return null;
+      return {
+        to: clean[idx]?.to ?? null,
+        message: ticket?.message || null,
+        details: ticket?.details || null,
+      };
+    })
+    .filter(Boolean);
+  return { sent: clean.length, errors: errorReports };
 }
 
 module.exports = {
