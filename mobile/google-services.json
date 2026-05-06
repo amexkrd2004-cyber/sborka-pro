@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "671145118995",
+    "project_id": "sborkapromobile",
+    "storage_bucket": "sborkapromobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:671145118995:android:f3450b4891ea4582235ee6",
+        "android_client_info": {
+          "package_name": "com.amex_sborka.sborkapromobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5VqdrI0e0Jy0p2xmCy9-M47xOEx297ps"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
