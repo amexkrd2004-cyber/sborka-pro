@@ -9,9 +9,11 @@ const INTERVAL_MS = 45_000;
 
 function startOrderEscalationLoop() {
   if (!isDbEnabled()) return;
-  setInterval(() => {
+  const tick = () => {
     processDueEscalations().catch((err) => console.error('[escalation]', err.message));
-  }, INTERVAL_MS);
+  };
+  setInterval(tick, INTERVAL_MS);
+  setTimeout(tick, 5_000);
   console.log('[escalation] проверка «не взят 10 мин» каждые', INTERVAL_MS / 1000, 'с');
 }
 
@@ -27,10 +29,12 @@ async function processDueEscalations() {
   );
   if (rows.length === 0) return;
 
-  const targetState = getAssemblyStateName();
+  console.log('[escalation] due', { count: rows.length });
+
+  const targetState = String(getAssemblyStateName() || '').trim();
 
   for (const r of rows) {
-    const orderId = r.moysklad_order_id;
+    const orderId = String(r.moysklad_order_id);
     const attempts = Number(r.attempts || 0);
     const maxAttempts = Math.max(Number(r.max_attempts || 4), 1);
     const repeatIntervalSec = Math.max(Number(r.repeat_interval_sec || 900), 60);
@@ -43,6 +47,7 @@ async function processDueEscalations() {
         await pool.query(`DELETE FROM order_escalations WHERE moysklad_order_id = $1::uuid`, [
           orderId,
         ]);
+        console.log('[escalation] skip: already claimed', { orderId });
         continue;
       }
 
@@ -64,11 +69,12 @@ async function processDueEscalations() {
         continue;
       }
 
-      const stateName = await getCustomerOrderStateName(order);
+      const stateName = String((await getCustomerOrderStateName(order)) || '').trim();
       if (stateName !== targetState) {
         await pool.query(`DELETE FROM order_escalations WHERE moysklad_order_id = $1::uuid`, [
           orderId,
         ]);
+        console.log('[escalation] skip: status changed', { orderId, stateName, expected: targetState });
         continue;
       }
 
@@ -78,6 +84,10 @@ async function processDueEscalations() {
          WHERE expo_push_token IS NOT NULL AND length(trim(expo_push_token)) > 0`
       );
       const pushTokens = tokensRes.rows.map((x) => String(x.expo_push_token || '').trim());
+
+      if (pushTokens.length === 0) {
+        console.warn('[escalation] no push tokens — alarm not delivered', { orderId, order: orderName });
+      }
 
       if (pushTokens.length > 0) {
         const push = await sendExpoPushBatch(

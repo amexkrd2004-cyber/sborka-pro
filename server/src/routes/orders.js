@@ -55,7 +55,9 @@ router.get('/', async (req, res) => {
 router.post('/escalations/ack-all', async (req, res) => {
   const pool = getPool();
   const del = await pool.query(`DELETE FROM order_escalations RETURNING moysklad_order_id`);
-  return res.json({ ok: true, stoppedCount: del.rowCount || 0 });
+  const n = del.rowCount || 0;
+  console.log('[orders] escalation ack-all', { userId: req.user.id, stoppedCount: n });
+  return res.json({ ok: true, stoppedCount: n });
 });
 
 /** Смена статуса в МойСклад под согласованные переходы. */
