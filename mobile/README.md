@@ -6,6 +6,17 @@
 
 ---
 
+## Важно: `google-services.json` и секреты
+
+- Файл `mobile/google-services.json` должен храниться только локально (или в секретах CI), в git его не коммитим.
+- В репозитории оставлен только шаблон: `mobile/google-services.example.json`.
+- Для локальной работы: скопируйте шаблон в `mobile/google-services.json` и вставьте ваши реальные значения Firebase.
+- После изменения Firebase ключа обязательно ограничьте его в Google Cloud:
+  - Application restrictions: **Android apps** (package + SHA-1),
+  - API restrictions: только нужные API.
+
+---
+
 ## Если красная ошибка: «невозможно загрузить npx.ps1» / «выполнение сценариев отключено»
 
 PowerShell по умолчанию часто **запрещает** запускать `npm.ps1` и **`npx.ps1`**. Сделайте **один** из вариантов.
